@@ -1,0 +1,83 @@
+.marketplace-section {
+  margin-top: 18px;
+  padding-top: 17px;
+  border-top: 1px solid var(--border);
+}
+
+.marketplace-label {
+  display: block;
+  margin-bottom: 9px;
+  color: #778493;
+  font-size: .7rem;
+  font-weight: 750;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+
+.marketplace-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 9px;
+}
+
+.marketplace-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  min-height: 38px;
+  padding: 7px 12px;
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  background: var(--surface-2);
+  color: #eef2f6;
+  font-size: .82rem;
+  font-weight: 750;
+  text-decoration: none;
+  transition: transform .18s ease, border-color .18s ease, background .18s ease;
+}
+
+.marketplace-link::before {
+  display: grid;
+  place-items: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  font-size: .69rem;
+  font-weight: 900;
+}
+
+.marketplace-link:hover {
+  transform: translateY(-1px);
+}
+
+.marketplace-link.spigot {
+  border-color: rgba(244, 109, 37, .34);
+  background: rgba(244, 109, 37, .08);
+}
+
+.marketplace-link.spigot::before {
+  content: "S";
+  background: #f46d25;
+  color: #17100c;
+}
+
+.marketplace-link.spigot:hover {
+  border-color: rgba(244, 109, 37, .7);
+  background: rgba(244, 109, 37, .14);
+}
+
+.marketplace-link.modrinth {
+  border-color: rgba(27, 217, 106, .34);
+  background: rgba(27, 217, 106, .08);
+}
+
+.marketplace-link.modrinth::before {
+  content: "M";
+  background: #1bd96a;
+  color: #07150d;
+}
+
+.marketplace-link.modrinth:hover {
+  border-color: rgba(27, 217, 106, .7);
+  background: rgba(27, 217, 106, .14);
+}
