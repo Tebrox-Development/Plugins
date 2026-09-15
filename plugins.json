@@ -24,7 +24,7 @@
     "platforms": ["Paper"],
     "compatibility": "Paper 1.21.4 – 26.2",
     "fallbackVersion": "1.1.0",
-    "image": "https://raw.githubusercontent.com/Tebrox/VertexCore/master/assets/banner.png",
+    "image": "https://raw.githubusercontent.com/Tebrox-Development/VertexCore/master/assets/banner.png",
     "links": {
       "source": "https://github.com/Tebrox-Development/VertexCore",
       "wiki": "https://github.com/Tebrox-Development/VertexCore/wiki",
