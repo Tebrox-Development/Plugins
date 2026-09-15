@@ -56,6 +56,13 @@ function link(label, url) {
   return a;
 }
 
+function marketplaceLink(label, url, platform) {
+  if (!url) return null;
+  const a = link(label, url);
+  a.className = `marketplace-link ${platform}`;
+  return a;
+}
+
 function buildCard(plugin) {
   const fragment = template.content.cloneNode(true);
   const card = fragment.querySelector(".plugin-card");
@@ -102,12 +109,37 @@ function buildCard(plugin) {
   source.target = "_blank";
 
   const secondary = fragment.querySelector(".secondary-links");
+
+  const marketplaces = [
+    ["SpigotMC", plugin.links.spigot, "spigot"],
+    ["Modrinth", plugin.links.modrinth, "modrinth"]
+  ].filter(([, url]) => Boolean(url));
+
+  if (marketplaces.length) {
+    const marketplaceSection = document.createElement("div");
+    marketplaceSection.className = "marketplace-section";
+
+    const marketplaceLabel = document.createElement("span");
+    marketplaceLabel.className = "marketplace-label";
+    marketplaceLabel.textContent = "Also available on";
+    marketplaceSection.appendChild(marketplaceLabel);
+
+    const marketplaceLinks = document.createElement("div");
+    marketplaceLinks.className = "marketplace-links";
+
+    marketplaces.forEach(([label, url, platform]) => {
+      const el = marketplaceLink(label, url, platform);
+      if (el) marketplaceLinks.appendChild(el);
+    });
+
+    marketplaceSection.appendChild(marketplaceLinks);
+    secondary.before(marketplaceSection);
+  }
+
   [
     ["Discord Support", supportUrl],
     ["Documentation", plugin.links.wiki],
-    ["Issues", plugin.links.issues],
-    ["Spigot", plugin.links.spigot],
-    ["Modrinth", plugin.links.modrinth]
+    ["Issues", plugin.links.issues]
   ].forEach(([label, url]) => {
     const el = link(label, url);
     if (el) secondary.appendChild(el);
