@@ -56,10 +56,27 @@ function link(label, url) {
   return a;
 }
 
-function marketplaceLink(label, url, platform) {
+function marketplaceLink(label, url, platform, status) {
   if (!url) return null;
-  const a = link(label, url);
+
+  const a = document.createElement("a");
+  a.href = url;
+  a.target = "_blank";
+  a.rel = "noopener";
   a.className = `marketplace-link ${platform}`;
+
+  const name = document.createElement("span");
+  name.className = "marketplace-name";
+  name.textContent = label;
+  a.appendChild(name);
+
+  if (status) {
+    const badge = document.createElement("span");
+    badge.className = "marketplace-status";
+    badge.textContent = status;
+    a.appendChild(badge);
+  }
+
   return a;
 }
 
@@ -111,8 +128,8 @@ function buildCard(plugin) {
   const secondary = fragment.querySelector(".secondary-links");
 
   const marketplaces = [
-    ["SpigotMC", plugin.links.spigot, "spigot"],
-    ["Modrinth", plugin.links.modrinth, "modrinth"]
+    ["SpigotMC", plugin.links.spigot, "spigot", plugin.marketplaceStatus?.spigot],
+    ["Modrinth", plugin.links.modrinth, "modrinth", plugin.marketplaceStatus?.modrinth]
   ].filter(([, url]) => Boolean(url));
 
   if (marketplaces.length) {
@@ -127,8 +144,8 @@ function buildCard(plugin) {
     const marketplaceLinks = document.createElement("div");
     marketplaceLinks.className = "marketplace-links";
 
-    marketplaces.forEach(([label, url, platform]) => {
-      const el = marketplaceLink(label, url, platform);
+    marketplaces.forEach(([label, url, platform, status]) => {
+      const el = marketplaceLink(label, url, platform, status);
       if (el) marketplaceLinks.appendChild(el);
     });
 
