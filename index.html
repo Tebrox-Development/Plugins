@@ -1,0 +1,108 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Minecraft plugins developed and maintained by Tebrox-Development.">
+  <meta name="theme-color" content="#0f141c">
+  <title>Tebrox Plugins</title>
+  <link rel="preconnect" href="https://api.github.com">
+  <link rel="preconnect" href="https://raw.githubusercontent.com">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="hero">
+    <nav class="nav shell">
+      <a class="brand" href="./" aria-label="Tebrox Plugins home">
+        <span class="brand-mark" aria-hidden="true">T</span>
+        <span>Tebrox Plugins</span>
+      </a>
+      <a class="nav-link" href="https://github.com/Tebrox-Development">GitHub</a>
+    </nav>
+
+    <div class="hero-content shell">
+      <p class="eyebrow">TEBROX-DEVELOPMENT</p>
+      <h1>Minecraft plugins,<br><span>in one place.</span></h1>
+      <p class="intro">
+        Public plugins and developer tools maintained by Tebrox-Development.
+        Downloads come directly from the project's GitHub releases.
+      </p>
+      <div class="hero-meta">
+        <span id="plugin-count">Loading projects…</span>
+        <span class="dot">•</span>
+        <span>No marketplace account required</span>
+      </div>
+    </div>
+  </header>
+
+  <main class="shell">
+    <section class="toolbar" aria-label="Plugin filters">
+      <div class="filters" id="filters">
+        <button class="filter active" data-filter="all">All</button>
+        <button class="filter" data-filter="Gameplay">Gameplay</button>
+        <button class="filter" data-filter="Library">Libraries</button>
+      </div>
+      <label class="search">
+        <span class="sr-only">Search plugins</span>
+        <input id="search" type="search" placeholder="Search plugins…" autocomplete="off">
+      </label>
+    </section>
+
+    <section id="plugin-grid" class="plugin-grid" aria-live="polite">
+      <div class="loading-card">Loading plugins…</div>
+    </section>
+
+    <noscript>
+      <p class="notice">JavaScript is required to load the plugin catalogue.</p>
+    </noscript>
+  </main>
+
+  <footer class="footer shell">
+    <span>© <span id="year"></span> Tebrox-Development</span>
+    <span>Release data provided by GitHub</span>
+  </footer>
+
+  <template id="plugin-template">
+    <article class="plugin-card">
+      <div class="card-image-wrap">
+        <img class="card-image" alt="" loading="lazy">
+        <span class="status-badge"></span>
+      </div>
+
+      <div class="card-body">
+        <div class="card-heading">
+          <div>
+            <p class="plugin-type"></p>
+            <h2 class="plugin-name"></h2>
+          </div>
+          <span class="version-badge"></span>
+        </div>
+
+        <p class="plugin-description"></p>
+
+        <div class="tags"></div>
+
+        <dl class="release-meta">
+          <div>
+            <dt>Compatibility</dt>
+            <dd class="compatibility"></dd>
+          </div>
+          <div>
+            <dt>Total downloads</dt>
+            <dd class="downloads">—</dd>
+          </div>
+        </dl>
+
+        <div class="card-actions">
+          <a class="button primary download-link" href="#" rel="noopener">Download</a>
+          <a class="button secondary source-link" href="#" rel="noopener">GitHub</a>
+        </div>
+
+        <div class="secondary-links"></div>
+      </div>
+    </article>
+  </template>
+
+  <script src="app.js" defer></script>
+</body>
+</html>
