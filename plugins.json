@@ -12,7 +12,11 @@
     "links": {
       "source": "https://github.com/Tebrox-Development/EggEmAll-Reloaded",
       "issues": "https://github.com/Tebrox-Development/EggEmAll-Reloaded/issues",
-      "spigot": "https://www.spigotmc.org/resources/eggemall-reloaded.138577/"
+      "spigot": "https://www.spigotmc.org/resources/eggemall-reloaded.138577/",
+      "modrinth": "https://modrinth.com/plugin/eggemall-reloaded"
+    },
+    "marketplaceStatus": {
+      "modrinth": "In review"
     }
   },
   {
