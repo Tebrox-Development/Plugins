@@ -28,7 +28,8 @@
     "links": {
       "source": "https://github.com/Tebrox-Development/VertexCore",
       "wiki": "https://github.com/Tebrox-Development/VertexCore/wiki",
-      "issues": "https://github.com/Tebrox-Development/VertexCore/issues"
+      "issues": "https://github.com/Tebrox-Development/VertexCore/issues",
+      "modrinth": "https://modrinth.com/plugin/vertexcore"
     }
   }
 ]
