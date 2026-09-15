@@ -61,12 +61,10 @@ a { color: inherit; }
 .brand-mark {
   width: 34px;
   height: 34px;
-  display: grid;
-  place-items: center;
-  border-radius: 9px;
-  color: #0b1007;
-  background: var(--accent);
-  font-weight: 900;
+  display: block;
+  flex: 0 0 34px;
+  border-radius: 10px;
+  object-fit: cover;
   box-shadow: 0 0 30px rgba(143,209,79,.15);
 }
 
