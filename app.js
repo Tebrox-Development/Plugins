@@ -3,6 +3,7 @@ const template = document.querySelector("#plugin-template");
 const count = document.querySelector("#plugin-count");
 const searchInput = document.querySelector("#search");
 const filters = [...document.querySelectorAll(".filter")];
+const supportUrl = "https://discord.gg/QRcVgVkAZr";
 
 let plugins = [];
 let activeFilter = "all";
@@ -102,6 +103,7 @@ function buildCard(plugin) {
 
   const secondary = fragment.querySelector(".secondary-links");
   [
+    ["Discord Support", supportUrl],
     ["Documentation", plugin.links.wiki],
     ["Issues", plugin.links.issues],
     ["Spigot", plugin.links.spigot],
