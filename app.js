@@ -1,0 +1,174 @@
+const grid = document.querySelector("#plugin-grid");
+const template = document.querySelector("#plugin-template");
+const count = document.querySelector("#plugin-count");
+const searchInput = document.querySelector("#search");
+const filters = [...document.querySelectorAll(".filter")];
+
+let plugins = [];
+let activeFilter = "all";
+
+document.querySelector("#year").textContent = new Date().getFullYear();
+
+const number = new Intl.NumberFormat("en-US");
+
+async function getReleaseData(repo) {
+  const endpoint = `https://api.github.com/repos/${repo}/releases?per_page=100`;
+  const response = await fetch(endpoint, {
+    headers: { Accept: "application/vnd.github+json" }
+  });
+
+  if (!response.ok) {
+    throw new Error(`GitHub API returned ${response.status}`);
+  }
+
+  const releases = await response.json();
+  const stable = releases.find(release => !release.draft && !release.prerelease);
+
+  if (!stable) return null;
+
+  const jar = stable.assets.find(asset =>
+    asset.name.toLowerCase().endsWith(".jar") &&
+    !asset.name.toLowerCase().endsWith(".jar.sha256")
+  );
+
+  const totalDownloads = releases
+    .filter(release => !release.draft)
+    .flatMap(release => release.assets || [])
+    .filter(asset => asset.name.toLowerCase().endsWith(".jar"))
+    .reduce((sum, asset) => sum + (asset.download_count || 0), 0);
+
+  return {
+    version: stable.tag_name.replace(/^v/i, ""),
+    releaseUrl: stable.html_url,
+    downloadUrl: jar?.browser_download_url || stable.html_url,
+    totalDownloads
+  };
+}
+
+function link(label, url) {
+  if (!url) return null;
+  const a = document.createElement("a");
+  a.textContent = label;
+  a.href = url;
+  a.target = "_blank";
+  a.rel = "noopener";
+  return a;
+}
+
+function buildCard(plugin) {
+  const fragment = template.content.cloneNode(true);
+  const card = fragment.querySelector(".plugin-card");
+
+  const image = fragment.querySelector(".card-image");
+  image.src = plugin.image || "";
+  image.alt = `${plugin.name} banner`;
+  image.addEventListener("error", () => {
+    image.hidden = true;
+  }, { once: true });
+
+  fragment.querySelector(".status-badge").textContent = plugin.status;
+  fragment.querySelector(".plugin-type").textContent = plugin.type;
+  fragment.querySelector(".plugin-name").textContent = plugin.name;
+  fragment.querySelector(".plugin-description").textContent = plugin.description;
+  fragment.querySelector(".compatibility").textContent = plugin.compatibility;
+
+  const release = plugin.releaseData;
+  fragment.querySelector(".version-badge").textContent =
+    `v${release?.version || plugin.fallbackVersion || "—"}`;
+
+  const downloads = fragment.querySelector(".downloads");
+  downloads.textContent = Number.isFinite(release?.totalDownloads)
+    ? number.format(release.totalDownloads)
+    : "Unavailable";
+
+  const tags = fragment.querySelector(".tags");
+  plugin.platforms.forEach(platform => {
+    const el = document.createElement("span");
+    el.className = "tag";
+    el.textContent = platform;
+    tags.appendChild(el);
+  });
+
+  const download = fragment.querySelector(".download-link");
+  download.href = release?.downloadUrl || plugin.links?.source || "#";
+  download.target = "_blank";
+  if (!release?.downloadUrl) {
+    download.textContent = "Releases";
+  }
+
+  const source = fragment.querySelector(".source-link");
+  source.href = plugin.links.source;
+  source.target = "_blank";
+
+  const secondary = fragment.querySelector(".secondary-links");
+  [
+    ["Documentation", plugin.links.wiki],
+    ["Issues", plugin.links.issues],
+    ["Spigot", plugin.links.spigot],
+    ["Modrinth", plugin.links.modrinth]
+  ].forEach(([label, url]) => {
+    const el = link(label, url);
+    if (el) secondary.appendChild(el);
+  });
+
+  card.dataset.type = plugin.type;
+  card.dataset.search = `${plugin.name} ${plugin.description} ${plugin.type} ${plugin.platforms.join(" ")}`.toLowerCase();
+
+  return fragment;
+}
+
+function render() {
+  grid.innerHTML = "";
+
+  const query = searchInput.value.trim().toLowerCase();
+  const visible = plugins.filter(plugin => {
+    const typeMatch = activeFilter === "all" || plugin.type === activeFilter;
+    const text = `${plugin.name} ${plugin.description} ${plugin.type} ${plugin.platforms.join(" ")}`.toLowerCase();
+    return typeMatch && (!query || text.includes(query));
+  });
+
+  if (!visible.length) {
+    grid.innerHTML = `<div class="empty-state">No plugins match this filter.</div>`;
+    return;
+  }
+
+  visible.forEach(plugin => grid.appendChild(buildCard(plugin)));
+}
+
+async function init() {
+  try {
+    const response = await fetch("plugins.json");
+    if (!response.ok) throw new Error("Could not load plugins.json");
+    plugins = await response.json();
+
+    count.textContent = `${plugins.length} public ${plugins.length === 1 ? "project" : "projects"}`;
+
+    await Promise.all(plugins.map(async plugin => {
+      try {
+        plugin.releaseData = await getReleaseData(plugin.repo);
+      } catch (error) {
+        console.warn(`Release data unavailable for ${plugin.repo}:`, error);
+        plugin.releaseData = null;
+      }
+    }));
+
+    render();
+  } catch (error) {
+    console.error(error);
+    grid.innerHTML = `<div class="empty-state">The plugin catalogue could not be loaded.</div>`;
+    count.textContent = "Plugin catalogue";
+  }
+}
+
+filters.forEach(button => {
+  button.addEventListener("click", () => {
+    filters.forEach(item => item.classList.remove("active"));
+    button.classList.add("active");
+    activeFilter = button.dataset.filter;
+    render();
+  });
+});
+
+searchInput.addEventListener("input", render);
+
+init();
