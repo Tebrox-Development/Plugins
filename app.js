@@ -13,21 +13,26 @@ document.querySelector("#year").textContent = new Date().getFullYear();
 const number = new Intl.NumberFormat("en-US");
 
 async function getReleaseData(repo) {
-  const endpoint = `https://api.github.com/repos/${repo}/releases?per_page=100`;
-  const response = await fetch(endpoint, {
-    headers: { Accept: "application/vnd.github+json" }
-  });
+  const latestEndpoint = `https://api.github.com/repos/${repo}/releases/latest`;
+  const releasesEndpoint = `https://api.github.com/repos/${repo}/releases?per_page=100`;
 
-  if (!response.ok) {
-    throw new Error(`GitHub API returned ${response.status}`);
+  const [latestResponse, releasesResponse] = await Promise.all([
+    fetch(latestEndpoint, {
+      headers: { Accept: "application/vnd.github+json" }
+    }),
+    fetch(releasesEndpoint, {
+      headers: { Accept: "application/vnd.github+json" }
+    })
+  ]);
+
+  if (!latestResponse.ok) {
+    throw new Error(`GitHub latest release API returned ${latestResponse.status}`);
   }
 
-  const releases = await response.json();
-  const stable = releases.find(release => !release.draft && !release.prerelease);
+  const latest = await latestResponse.json();
+  const releases = releasesResponse.ok ? await releasesResponse.json() : [];
 
-  if (!stable) return null;
-
-  const jar = stable.assets.find(asset =>
+  const jar = (latest.assets || []).find(asset =>
     asset.name.toLowerCase().endsWith(".jar") &&
     !asset.name.toLowerCase().endsWith(".jar.sha256")
   );
@@ -38,10 +43,14 @@ async function getReleaseData(repo) {
     .filter(asset => asset.name.toLowerCase().endsWith(".jar"))
     .reduce((sum, asset) => sum + (asset.download_count || 0), 0);
 
+  const latestDownloadUrl = jar
+    ? `https://github.com/${repo}/releases/latest/download/${encodeURIComponent(jar.name)}`
+    : latest.html_url;
+
   return {
-    version: stable.tag_name.replace(/^v/i, ""),
-    releaseUrl: stable.html_url,
-    downloadUrl: jar?.browser_download_url || stable.html_url,
+    version: latest.tag_name.replace(/^v/i, ""),
+    releaseUrl: latest.html_url,
+    downloadUrl: latestDownloadUrl,
     totalDownloads
   };
 }
