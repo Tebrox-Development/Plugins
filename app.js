@@ -154,8 +154,8 @@ function buildCard(plugin) {
       dependencySection.appendChild(row);
     };
 
-    addDependencyRow("Required", requiredDependencies);
-    addDependencyRow("Optional", optionalDependencies, true);
+    addDependencyRow("Required Plugins", requiredDependencies);
+    addDependencyRow("Optional Plugins", optionalDependencies, true);
 
     tags.after(dependencySection);
   }
