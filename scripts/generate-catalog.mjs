@@ -185,7 +185,7 @@ async function buildAutomaticEntry(repo) {
     "";
 
   return {
-    name: titleFromRepo(details.name),
+    name: propertyValue(properties, "plugin_name") || titleFromRepo(details.name),
     repo: details.full_name,
     description: details.description || "No description provided.",
     type: propertyValue(properties, "plugin_type") || "Plugin",
