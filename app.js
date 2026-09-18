@@ -64,10 +64,16 @@ function buildCard(plugin) {
   fragment.querySelector(".plugin-type").textContent = plugin.type;
   fragment.querySelector(".plugin-name").textContent = plugin.name;
   fragment.querySelector(".plugin-description").textContent = plugin.description;
-  fragment.querySelector(".compatibility").textContent = plugin.compatibility;
 
   const release = plugin.releaseData;
   const comingSoon = plugin.status === "Coming Soon";
+
+  const releaseMeta = fragment.querySelector(".release-meta");
+  if (comingSoon) {
+    releaseMeta.remove();
+  } else {
+    fragment.querySelector(".compatibility").textContent = plugin.compatibility;
+  }
   fragment.querySelector(".version-badge").textContent = comingSoon
     ? "Coming Soon"
     : release?.version
