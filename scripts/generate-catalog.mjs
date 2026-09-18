@@ -310,15 +310,11 @@ async function buildAutomaticEntry(repo, properties) {
   );
 
   const configuredPlatforms = propertyValue(properties, "plugin_platforms");
-  const topicPlatforms = (details.topics || [])
-    .filter(topic => ["paper", "spigot"].includes(topic.toLowerCase()))
-    .map(topic => topic.charAt(0).toUpperCase() + topic.slice(1).toLowerCase());
-
   const platforms = Array.isArray(configuredPlatforms)
     ? configuredPlatforms
     : configuredPlatforms
       ? String(configuredPlatforms).split(",").map(value => value.trim()).filter(Boolean)
-      : topicPlatforms;
+      : [];
 
   const image =
     await findBanner(details.full_name, contentBranch) ||
