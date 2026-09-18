@@ -192,9 +192,10 @@ async function buildAutomaticEntry(repo) {
     status: details.archived ? "Archived" : comingSoon ? "Coming Soon" : "Active",
     contentBranch,
     platforms,
-    compatibility:
-      propertyValue(properties, "plugin_compatibility") ||
-      "See project documentation",
+    compatibility: comingSoon
+      ? null
+      : propertyValue(properties, "plugin_compatibility") ||
+        "See project documentation",
     image,
     language: details.language,
     license: details.license?.spdx_id || null,
