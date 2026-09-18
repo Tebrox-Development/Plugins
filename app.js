@@ -69,23 +69,21 @@ function buildCard(plugin) {
   const comingSoon = plugin.status === "Coming Soon";
 
   const releaseMeta = fragment.querySelector(".release-meta");
+  const versionBadge = fragment.querySelector(".version-badge");
+
   if (comingSoon) {
     releaseMeta.remove();
+    versionBadge.textContent = "Coming Soon";
   } else {
     fragment.querySelector(".compatibility").textContent = plugin.compatibility;
-  }
-  fragment.querySelector(".version-badge").textContent = comingSoon
-    ? "Coming Soon"
-    : release?.version
+    fragment.querySelector(".downloads").textContent =
+      Number.isFinite(release?.totalDownloads)
+        ? number.format(release.totalDownloads)
+        : "Unavailable";
+    versionBadge.textContent = release?.version
       ? `v${release.version}`
       : "—";
-
-  const downloads = fragment.querySelector(".downloads");
-  downloads.textContent = comingSoon
-    ? "—"
-    : Number.isFinite(release?.totalDownloads)
-      ? number.format(release.totalDownloads)
-      : "Unavailable";
+  }
 
   const tags = fragment.querySelector(".tags");
   plugin.platforms.forEach(platform => {
