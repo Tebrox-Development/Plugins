@@ -93,6 +93,44 @@ function buildCard(plugin) {
     tags.appendChild(el);
   });
 
+  const requiredDependencies = plugin.dependencies?.required || [];
+  const optionalDependencies = plugin.dependencies?.optional || [];
+
+  if (requiredDependencies.length || optionalDependencies.length) {
+    const dependencySection = document.createElement("div");
+    dependencySection.className = "dependency-section";
+
+    const addDependencyRow = (label, values, optional = false) => {
+      if (!values.length) return;
+
+      const row = document.createElement("div");
+      row.className = "dependency-row";
+
+      const title = document.createElement("span");
+      title.className = "dependency-label";
+      title.textContent = label;
+      row.appendChild(title);
+
+      const list = document.createElement("div");
+      list.className = "dependency-list";
+
+      values.forEach(value => {
+        const badge = document.createElement("span");
+        badge.className = optional ? "dependency optional" : "dependency required";
+        badge.textContent = value;
+        list.appendChild(badge);
+      });
+
+      row.appendChild(list);
+      dependencySection.appendChild(row);
+    };
+
+    addDependencyRow("Required", requiredDependencies);
+    addDependencyRow("Optional", optionalDependencies, true);
+
+    tags.after(dependencySection);
+  }
+
   const download = fragment.querySelector(".download-link");
   if (comingSoon) {
     download.remove();
@@ -147,7 +185,11 @@ function buildCard(plugin) {
   });
 
   card.dataset.type = plugin.type;
-  card.dataset.search = `${plugin.name} ${plugin.description} ${plugin.type} ${plugin.platforms.join(" ")}`.toLowerCase();
+  const dependencySearch = [
+    ...(plugin.dependencies?.required || []),
+    ...(plugin.dependencies?.optional || [])
+  ].join(" ");
+  card.dataset.search = `${plugin.name} ${plugin.description} ${plugin.type} ${plugin.platforms.join(" ")} ${dependencySearch}`.toLowerCase();
 
   return fragment;
 }
@@ -158,7 +200,11 @@ function render() {
   const query = searchInput.value.trim().toLowerCase();
   const visible = plugins.filter(plugin => {
     const typeMatch = activeFilter === "all" || plugin.type === activeFilter;
-    const text = `${plugin.name} ${plugin.description} ${plugin.type} ${plugin.platforms.join(" ")}`.toLowerCase();
+    const dependencySearch = [
+      ...(plugin.dependencies?.required || []),
+      ...(plugin.dependencies?.optional || [])
+    ].join(" ");
+    const text = `${plugin.name} ${plugin.description} ${plugin.type} ${plugin.platforms.join(" ")} ${dependencySearch}`.toLowerCase();
     return typeMatch && (!query || text.includes(query));
   });
 
