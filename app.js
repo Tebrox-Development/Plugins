@@ -57,20 +57,29 @@ function buildCard(plugin) {
     image.hidden = true;
   }, { once: true });
 
-  fragment.querySelector(".status-badge").textContent = plugin.status;
+  const statusBadge = fragment.querySelector(".status-badge");
+  statusBadge.textContent = plugin.status;
+  statusBadge.classList.toggle("coming-soon", plugin.status === "Coming Soon");
+  statusBadge.classList.toggle("archived", plugin.status === "Archived");
   fragment.querySelector(".plugin-type").textContent = plugin.type;
   fragment.querySelector(".plugin-name").textContent = plugin.name;
   fragment.querySelector(".plugin-description").textContent = plugin.description;
   fragment.querySelector(".compatibility").textContent = plugin.compatibility;
 
   const release = plugin.releaseData;
-  fragment.querySelector(".version-badge").textContent =
-    `v${release?.version || plugin.fallbackVersion || "—"}`;
+  const comingSoon = plugin.status === "Coming Soon";
+  fragment.querySelector(".version-badge").textContent = comingSoon
+    ? "Coming Soon"
+    : release?.version
+      ? `v${release.version}`
+      : "—";
 
   const downloads = fragment.querySelector(".downloads");
-  downloads.textContent = Number.isFinite(release?.totalDownloads)
-    ? number.format(release.totalDownloads)
-    : "Unavailable";
+  downloads.textContent = comingSoon
+    ? "—"
+    : Number.isFinite(release?.totalDownloads)
+      ? number.format(release.totalDownloads)
+      : "Unavailable";
 
   const tags = fragment.querySelector(".tags");
   plugin.platforms.forEach(platform => {
@@ -81,10 +90,15 @@ function buildCard(plugin) {
   });
 
   const download = fragment.querySelector(".download-link");
-  download.href = release?.downloadUrl || plugin.links?.source || "#";
-  download.target = "_blank";
-  if (!release?.downloadUrl) {
-    download.textContent = "Releases";
+  if (comingSoon) {
+    download.remove();
+    fragment.querySelector(".card-actions").classList.add("source-only");
+  } else {
+    download.href = release?.downloadUrl || plugin.links?.source || "#";
+    download.target = "_blank";
+    if (!release?.downloadUrl) {
+      download.textContent = "Releases";
+    }
   }
 
   const source = fragment.querySelector(".source-link");
