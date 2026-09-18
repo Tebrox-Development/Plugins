@@ -223,6 +223,30 @@ h1 span {
   box-shadow: 0 0 10px rgba(143,209,79,.7);
 }
 
+.status-badge.coming-soon {
+  border-color: rgba(224,184,74,.32);
+  color: #f0cf72;
+}
+
+.status-badge.coming-soon::before {
+  background: #e0b84a;
+  box-shadow: 0 0 10px rgba(224,184,74,.55);
+}
+
+.status-badge.archived {
+  border-color: rgba(150,162,177,.24);
+  color: var(--muted);
+}
+
+.status-badge.archived::before {
+  background: #7f8b98;
+  box-shadow: none;
+}
+
+.card-actions.source-only {
+  grid-template-columns: 1fr;
+}
+
 .card-body { padding: 24px; }
 
 .card-heading {
