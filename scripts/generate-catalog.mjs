@@ -20,7 +20,7 @@ async function request(path, { allow404 = false } = {}) {
 
   // A repository-scoped Actions token may not be allowed to read another
   // repository. Public catalogue data can safely be retried anonymously.
-  if (token && (response.status === 403 || response.status === 404)) {
+  if (token && response.status === 403) {
     const anonymousHeaders = {
       Accept: headers.Accept,
       "User-Agent": headers["User-Agent"]
