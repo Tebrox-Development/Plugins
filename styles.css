@@ -299,6 +299,46 @@ h1 span {
   font-size: .76rem;
 }
 
+.dependency-section {
+  display: grid;
+  gap: 10px;
+  margin: -4px 0 22px;
+}
+
+.dependency-row {
+  display: grid;
+  gap: 6px;
+}
+
+.dependency-label {
+  color: #778493;
+  font-size: .68rem;
+  font-weight: 750;
+  letter-spacing: .06em;
+  text-transform: uppercase;
+}
+
+.dependency-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 7px;
+}
+
+.dependency {
+  padding: 5px 9px;
+  border: 1px solid rgba(143,209,79,.22);
+  border-radius: 7px;
+  background: rgba(143,209,79,.08);
+  color: #cfe9b4;
+  font-size: .76rem;
+}
+
+.dependency.optional {
+  border-color: var(--border);
+  background: var(--surface-2);
+  color: #9da8b6;
+}
+
 .release-meta {
   display: grid;
   grid-template-columns: 1.5fr 1fr;
