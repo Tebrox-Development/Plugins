@@ -101,6 +101,324 @@ async function getContentBranch(repo, defaultBranch, comingSoon) {
   return defaultBranch;
 }
 
+async function fetchTextFile(repo, path, branch) {
+  const file = await request(
+    `/repos/${repo}/contents/${path}?ref=${encodeURIComponent(branch)}`,
+    { allow404: true }
+  );
+
+  if (!file || file.type !== "file" || !file.content) return null;
+  return Buffer.from(file.content.replace(/\n/g, ""), "base64").toString("utf8");
+}
+
+function parsePaperDependencies(content) {
+  const required = [];
+  const optional = [];
+  const lines = content.split(/\r?\n/);
+  let inDependencies = false;
+  let inServer = false;
+  let current = null;
+
+  for (const line of lines) {
+    if (/^dependencies:\s*$/.test(line)) {
+      inDependencies = true;
+      inServer = false;
+      current = null;
+      continue;
+    }
+
+    if (!inDependencies) continue;
+
+    if (/^\S/.test(line) && !/^dependencies:/.test(line)) break;
+
+    if (/^  server:\s*$/.test(line)) {
+      inServer = true;
+      current = null;
+      continue;
+    }
+
+    if (!inServer) continue;
+
+    if (/^  \S/.test(line) && !/^  server:/.test(line)) break;
+
+    const dependency = line.match(/^    ([^:#][^:]*):\s*$/);
+    if (dependency) {
+      current = { name: dependency[1].trim(), required: true };
+      required.push(current.name);
+      continue;
+    }
+
+    const requiredMatch = line.match(/^      required:\s*(true|false)\s*$/i);
+    if (current && requiredMatch && requiredMatch[1].toLowerCase() === "false") {
+      const index = required.indexOf(current.name);
+      if (index >= 0) required.splice(index, 1);
+      optional.push(current.name);
+      current.required = false;
+    }
+  }
+
+  return { required, optional };
+}
+
+function parsePluginList(content, key) {
+  const lines = content.split(/\r?\n/);
+  const values = [];
+
+  for (let i = 0; i < lines.length; i += 1) {
+    const inline = lines[i].match(new RegExp(`^${key}:\\s*\\[(.*)\\]\\s*import { writeFile } from "node:fs/promises";
+
+const ORG = "Tebrox-Development";
+const API = "https://api.github.com";
+const token = process.env.GITHUB_TOKEN || "";
+
+const headers = {
+  Accept: "application/vnd.github+json",
+  "User-Agent": "tebrox-plugin-catalog"
+};
+
+if (token) {
+  headers.Authorization = `Bearer ${token}`;
+}
+
+async function request(path, { allow404 = false } = {}) {
+  const url = path.startsWith("http") ? path : `${API}${path}`;
+
+  let response = await fetch(url, { headers });
+
+  // A repository-scoped Actions token may not be allowed to read another
+  // repository. Public catalogue data can safely be retried anonymously.
+  if (token && (response.status === 403 || response.status === 404)) {
+    const anonymousHeaders = {
+      Accept: headers.Accept,
+      "User-Agent": headers["User-Agent"]
+    };
+    response = await fetch(url, { headers: anonymousHeaders });
+  }
+
+  if (allow404 && response.status === 404) return null;
+  if (!response.ok) {
+    throw new Error(`GitHub API ${response.status}: ${url}`);
+  }
+
+  return response.json();
+}
+
+async function paged(path) {
+  const items = [];
+  let page = 1;
+
+  while (true) {
+    const separator = path.includes("?") ? "&" : "?";
+    const batch = await request(`${path}${separator}per_page=100&page=${page}`);
+    items.push(...batch);
+    if (batch.length < 100) break;
+    page += 1;
+  }
+
+  return items;
+}
+
+function propertyValue(properties, name) {
+  const value = properties?.[name];
+  return value === null || value === undefined || value === "" ? null : value;
+}
+
+async function getCustomProperties(repo) {
+  const url = `${API}/repos/${repo}/properties/values`;
+  const response = await fetch(url, {
+    headers: {
+      Accept: "application/vnd.github+json",
+      "User-Agent": headers["User-Agent"]
+    }
+  });
+
+  if (response.status === 404) return {};
+  if (!response.ok) {
+    throw new Error(`GitHub custom properties API ${response.status}: ${url}`);
+  }
+
+  const values = await response.json();
+  return Object.fromEntries(
+    values.map(entry => [entry.property_name, entry.value])
+  );
+}
+
+function titleFromRepo(name) {
+  return name.replace(/-/g, " ");
+}
+
+async function branchExists(repo, branch) {
+  return Boolean(
+    await request(
+      `/repos/${repo}/branches/${encodeURIComponent(branch)}`,
+      { allow404: true }
+    )
+  );
+}
+
+async function getContentBranch(repo, defaultBranch, comingSoon) {
+  if (!comingSoon) return defaultBranch;
+
+  for (const branch of ["development", "dev"]) {
+    if (branch === defaultBranch || await branchExists(repo, branch)) {
+      return branch;
+    }
+  }
+
+  return defaultBranch;
+}
+
+, "i"));
+    if (inline) {
+      return inline[1]
+        .split(",")
+        .map(value => value.trim().replace(/^['"]|['"]$/g, ""))
+        .filter(Boolean);
+    }
+
+    if (new RegExp(`^${key}:\\s*import { writeFile } from "node:fs/promises";
+
+const ORG = "Tebrox-Development";
+const API = "https://api.github.com";
+const token = process.env.GITHUB_TOKEN || "";
+
+const headers = {
+  Accept: "application/vnd.github+json",
+  "User-Agent": "tebrox-plugin-catalog"
+};
+
+if (token) {
+  headers.Authorization = `Bearer ${token}`;
+}
+
+async function request(path, { allow404 = false } = {}) {
+  const url = path.startsWith("http") ? path : `${API}${path}`;
+
+  let response = await fetch(url, { headers });
+
+  // A repository-scoped Actions token may not be allowed to read another
+  // repository. Public catalogue data can safely be retried anonymously.
+  if (token && (response.status === 403 || response.status === 404)) {
+    const anonymousHeaders = {
+      Accept: headers.Accept,
+      "User-Agent": headers["User-Agent"]
+    };
+    response = await fetch(url, { headers: anonymousHeaders });
+  }
+
+  if (allow404 && response.status === 404) return null;
+  if (!response.ok) {
+    throw new Error(`GitHub API ${response.status}: ${url}`);
+  }
+
+  return response.json();
+}
+
+async function paged(path) {
+  const items = [];
+  let page = 1;
+
+  while (true) {
+    const separator = path.includes("?") ? "&" : "?";
+    const batch = await request(`${path}${separator}per_page=100&page=${page}`);
+    items.push(...batch);
+    if (batch.length < 100) break;
+    page += 1;
+  }
+
+  return items;
+}
+
+function propertyValue(properties, name) {
+  const value = properties?.[name];
+  return value === null || value === undefined || value === "" ? null : value;
+}
+
+async function getCustomProperties(repo) {
+  const url = `${API}/repos/${repo}/properties/values`;
+  const response = await fetch(url, {
+    headers: {
+      Accept: "application/vnd.github+json",
+      "User-Agent": headers["User-Agent"]
+    }
+  });
+
+  if (response.status === 404) return {};
+  if (!response.ok) {
+    throw new Error(`GitHub custom properties API ${response.status}: ${url}`);
+  }
+
+  const values = await response.json();
+  return Object.fromEntries(
+    values.map(entry => [entry.property_name, entry.value])
+  );
+}
+
+function titleFromRepo(name) {
+  return name.replace(/-/g, " ");
+}
+
+async function branchExists(repo, branch) {
+  return Boolean(
+    await request(
+      `/repos/${repo}/branches/${encodeURIComponent(branch)}`,
+      { allow404: true }
+    )
+  );
+}
+
+async function getContentBranch(repo, defaultBranch, comingSoon) {
+  if (!comingSoon) return defaultBranch;
+
+  for (const branch of ["development", "dev"]) {
+    if (branch === defaultBranch || await branchExists(repo, branch)) {
+      return branch;
+    }
+  }
+
+  return defaultBranch;
+}
+
+, "i").test(lines[i])) {
+      for (let j = i + 1; j < lines.length; j += 1) {
+        const item = lines[j].match(/^\s+-\s+(.+?)\s*$/);
+        if (!item) break;
+        values.push(item[1].trim().replace(/^['"]|['"]$/g, ""));
+      }
+      break;
+    }
+  }
+
+  return values;
+}
+
+async function getPluginDependencies(repo, branch) {
+  const paperPlugin = await fetchTextFile(
+    repo,
+    "src/main/resources/paper-plugin.yml",
+    branch
+  );
+
+  if (paperPlugin) {
+    return parsePaperDependencies(paperPlugin);
+  }
+
+  const pluginYml = await fetchTextFile(
+    repo,
+    "src/main/resources/plugin.yml",
+    branch
+  );
+
+  if (pluginYml) {
+    return {
+      required: parsePluginList(pluginYml, "depend"),
+      optional: parsePluginList(pluginYml, "softdepend")
+    };
+  }
+
+  return { required: [], optional: [] };
+}
+
 async function findBanner(repo, branch) {
   const locations = [
     { dir: "docs/assets", exact: true },
@@ -183,6 +501,10 @@ async function buildAutomaticEntry(repo) {
     await findBanner(details.full_name, contentBranch) ||
     details.owner?.avatar_url ||
     "";
+  const dependencies = await getPluginDependencies(
+    details.full_name,
+    contentBranch
+  );
 
   return {
     name: propertyValue(properties, "plugin_name") || titleFromRepo(details.name),
@@ -208,6 +530,7 @@ async function buildAutomaticEntry(repo) {
       spigot: propertyValue(properties, "plugin_spigot"),
       modrinth: propertyValue(properties, "plugin_modrinth")
     },
+    dependencies,
     releaseData
   };
 }
