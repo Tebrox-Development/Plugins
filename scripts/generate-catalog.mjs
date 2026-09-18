@@ -56,6 +56,26 @@ function propertyValue(properties, name) {
   return value === null || value === undefined || value === "" ? null : value;
 }
 
+async function getCustomProperties(repo) {
+  const url = `${API}/repos/${repo}/properties/values`;
+  const response = await fetch(url, {
+    headers: {
+      Accept: "application/vnd.github+json",
+      "User-Agent": headers["User-Agent"]
+    }
+  });
+
+  if (response.status === 404) return {};
+  if (!response.ok) {
+    throw new Error(`GitHub custom properties API ${response.status}: ${url}`);
+  }
+
+  const values = await response.json();
+  return Object.fromEntries(
+    values.map(entry => [entry.property_name, entry.value])
+  );
+}
+
 function titleFromRepo(name) {
   return name.replace(/-/g, " ");
 }
@@ -126,7 +146,7 @@ async function loadLegacy() {
 
 async function buildAutomaticEntry(repo, legacyByRepo) {
   const details = await request(`/repos/${repo.full_name}`);
-  const properties = details.custom_properties || {};
+  const properties = await getCustomProperties(repo.full_name);
   const legacy = legacyByRepo.get(repo.full_name);
 
   const configuredPlatforms = propertyValue(properties, "plugin_platforms");
@@ -203,10 +223,10 @@ async function main() {
   const catalogueRepos = [];
 
   for (const repo of repos) {
-    const details = await request(`/repos/${repo.full_name}`);
-    const enabled = propertyValue(details.custom_properties, "plugin_catalog");
+    const properties = await getCustomProperties(repo.full_name);
+    const enabled = propertyValue(properties, "plugin_catalog");
     if (enabled === true || String(enabled).toLowerCase() === "true") {
-      catalogueRepos.push(details);
+      catalogueRepos.push(repo);
     }
   }
 
