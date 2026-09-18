@@ -163,235 +163,34 @@ function parsePaperDependencies(content) {
 function parsePluginList(content, key) {
   const lines = content.split(/\r?\n/);
   const values = [];
+  const normalizedKey = key.toLowerCase() + ":";
 
   for (let i = 0; i < lines.length; i += 1) {
-    const inline = lines[i].match(new RegExp(`^${key}:\\s*\\[(.*)\\]\\s*import { writeFile } from "node:fs/promises";
+    const trimmed = lines[i].trim();
+    if (!trimmed.toLowerCase().startsWith(normalizedKey)) continue;
 
-const ORG = "Tebrox-Development";
-const API = "https://api.github.com";
-const token = process.env.GITHUB_TOKEN || "";
-
-const headers = {
-  Accept: "application/vnd.github+json",
-  "User-Agent": "tebrox-plugin-catalog"
-};
-
-if (token) {
-  headers.Authorization = `Bearer ${token}`;
-}
-
-async function request(path, { allow404 = false } = {}) {
-  const url = path.startsWith("http") ? path : `${API}${path}`;
-
-  let response = await fetch(url, { headers });
-
-  // A repository-scoped Actions token may not be allowed to read another
-  // repository. Public catalogue data can safely be retried anonymously.
-  if (token && (response.status === 403 || response.status === 404)) {
-    const anonymousHeaders = {
-      Accept: headers.Accept,
-      "User-Agent": headers["User-Agent"]
-    };
-    response = await fetch(url, { headers: anonymousHeaders });
-  }
-
-  if (allow404 && response.status === 404) return null;
-  if (!response.ok) {
-    throw new Error(`GitHub API ${response.status}: ${url}`);
-  }
-
-  return response.json();
-}
-
-async function paged(path) {
-  const items = [];
-  let page = 1;
-
-  while (true) {
-    const separator = path.includes("?") ? "&" : "?";
-    const batch = await request(`${path}${separator}per_page=100&page=${page}`);
-    items.push(...batch);
-    if (batch.length < 100) break;
-    page += 1;
-  }
-
-  return items;
-}
-
-function propertyValue(properties, name) {
-  const value = properties?.[name];
-  return value === null || value === undefined || value === "" ? null : value;
-}
-
-async function getCustomProperties(repo) {
-  const url = `${API}/repos/${repo}/properties/values`;
-  const response = await fetch(url, {
-    headers: {
-      Accept: "application/vnd.github+json",
-      "User-Agent": headers["User-Agent"]
-    }
-  });
-
-  if (response.status === 404) return {};
-  if (!response.ok) {
-    throw new Error(`GitHub custom properties API ${response.status}: ${url}`);
-  }
-
-  const values = await response.json();
-  return Object.fromEntries(
-    values.map(entry => [entry.property_name, entry.value])
-  );
-}
-
-function titleFromRepo(name) {
-  return name.replace(/-/g, " ");
-}
-
-async function branchExists(repo, branch) {
-  return Boolean(
-    await request(
-      `/repos/${repo}/branches/${encodeURIComponent(branch)}`,
-      { allow404: true }
-    )
-  );
-}
-
-async function getContentBranch(repo, defaultBranch, comingSoon) {
-  if (!comingSoon) return defaultBranch;
-
-  for (const branch of ["development", "dev"]) {
-    if (branch === defaultBranch || await branchExists(repo, branch)) {
-      return branch;
-    }
-  }
-
-  return defaultBranch;
-}
-
-, "i"));
-    if (inline) {
-      return inline[1]
+    const remainder = trimmed.slice(normalizedKey.length).trim();
+    if (remainder.startsWith("[") && remainder.endsWith("]")) {
+      return remainder
+        .slice(1, -1)
         .split(",")
-        .map(value => value.trim().replace(/^['"]|['"]$/g, ""))
+        .map(value => value.trim().replace(/^[\'"]|[\'"]$/g, ""))
         .filter(Boolean);
     }
 
-    if (new RegExp(`^${key}:\\s*import { writeFile } from "node:fs/promises";
-
-const ORG = "Tebrox-Development";
-const API = "https://api.github.com";
-const token = process.env.GITHUB_TOKEN || "";
-
-const headers = {
-  Accept: "application/vnd.github+json",
-  "User-Agent": "tebrox-plugin-catalog"
-};
-
-if (token) {
-  headers.Authorization = `Bearer ${token}`;
-}
-
-async function request(path, { allow404 = false } = {}) {
-  const url = path.startsWith("http") ? path : `${API}${path}`;
-
-  let response = await fetch(url, { headers });
-
-  // A repository-scoped Actions token may not be allowed to read another
-  // repository. Public catalogue data can safely be retried anonymously.
-  if (token && (response.status === 403 || response.status === 404)) {
-    const anonymousHeaders = {
-      Accept: headers.Accept,
-      "User-Agent": headers["User-Agent"]
-    };
-    response = await fetch(url, { headers: anonymousHeaders });
-  }
-
-  if (allow404 && response.status === 404) return null;
-  if (!response.ok) {
-    throw new Error(`GitHub API ${response.status}: ${url}`);
-  }
-
-  return response.json();
-}
-
-async function paged(path) {
-  const items = [];
-  let page = 1;
-
-  while (true) {
-    const separator = path.includes("?") ? "&" : "?";
-    const batch = await request(`${path}${separator}per_page=100&page=${page}`);
-    items.push(...batch);
-    if (batch.length < 100) break;
-    page += 1;
-  }
-
-  return items;
-}
-
-function propertyValue(properties, name) {
-  const value = properties?.[name];
-  return value === null || value === undefined || value === "" ? null : value;
-}
-
-async function getCustomProperties(repo) {
-  const url = `${API}/repos/${repo}/properties/values`;
-  const response = await fetch(url, {
-    headers: {
-      Accept: "application/vnd.github+json",
-      "User-Agent": headers["User-Agent"]
-    }
-  });
-
-  if (response.status === 404) return {};
-  if (!response.ok) {
-    throw new Error(`GitHub custom properties API ${response.status}: ${url}`);
-  }
-
-  const values = await response.json();
-  return Object.fromEntries(
-    values.map(entry => [entry.property_name, entry.value])
-  );
-}
-
-function titleFromRepo(name) {
-  return name.replace(/-/g, " ");
-}
-
-async function branchExists(repo, branch) {
-  return Boolean(
-    await request(
-      `/repos/${repo}/branches/${encodeURIComponent(branch)}`,
-      { allow404: true }
-    )
-  );
-}
-
-async function getContentBranch(repo, defaultBranch, comingSoon) {
-  if (!comingSoon) return defaultBranch;
-
-  for (const branch of ["development", "dev"]) {
-    if (branch === defaultBranch || await branchExists(repo, branch)) {
-      return branch;
-    }
-  }
-
-  return defaultBranch;
-}
-
-, "i").test(lines[i])) {
+    if (!remainder) {
       for (let j = i + 1; j < lines.length; j += 1) {
         const item = lines[j].match(/^\s+-\s+(.+?)\s*$/);
         if (!item) break;
-        values.push(item[1].trim().replace(/^['"]|['"]$/g, ""));
+        values.push(item[1].trim().replace(/^[\'"]|[\'"]$/g, ""));
       }
-      break;
     }
+
+    break;
   }
 
   return values;
 }
-
 async function getPluginDependencies(repo, branch) {
   const paperPlugin = await fetchTextFile(
     repo,
