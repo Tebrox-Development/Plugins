@@ -80,6 +80,27 @@ function titleFromRepo(name) {
   return name.replace(/-/g, " ");
 }
 
+async function branchExists(repo, branch) {
+  return Boolean(
+    await request(
+      `/repos/${repo}/branches/${encodeURIComponent(branch)}`,
+      { allow404: true }
+    )
+  );
+}
+
+async function getContentBranch(repo, defaultBranch, comingSoon) {
+  if (!comingSoon) return defaultBranch;
+
+  for (const branch of ["development", "dev"]) {
+    if (branch === defaultBranch || await branchExists(repo, branch)) {
+      return branch;
+    }
+  }
+
+  return defaultBranch;
+}
+
 async function findBanner(repo, branch) {
   const locations = [
     { dir: "docs/assets", exact: true },
@@ -139,6 +160,13 @@ async function getReleaseData(repo) {
 async function buildAutomaticEntry(repo) {
   const details = await request(`/repos/${repo.full_name}`);
   const properties = await getCustomProperties(repo.full_name);
+  const releaseData = await getReleaseData(details.full_name);
+  const comingSoon = !details.archived && !releaseData;
+  const contentBranch = await getContentBranch(
+    details.full_name,
+    details.default_branch,
+    comingSoon
+  );
 
   const configuredPlatforms = propertyValue(properties, "plugin_platforms");
   const topicPlatforms = (details.topics || [])
@@ -152,7 +180,7 @@ async function buildAutomaticEntry(repo) {
       : topicPlatforms;
 
   const image =
-    await findBanner(details.full_name, details.default_branch) ||
+    await findBanner(details.full_name, contentBranch) ||
     details.owner?.avatar_url ||
     "";
 
@@ -161,7 +189,8 @@ async function buildAutomaticEntry(repo) {
     repo: details.full_name,
     description: details.description || "No description provided.",
     type: propertyValue(properties, "plugin_type") || "Plugin",
-    status: details.archived ? "Archived" : "Active",
+    status: details.archived ? "Archived" : comingSoon ? "Coming Soon" : "Active",
+    contentBranch,
     platforms,
     compatibility:
       propertyValue(properties, "plugin_compatibility") ||
@@ -170,13 +199,15 @@ async function buildAutomaticEntry(repo) {
     language: details.language,
     license: details.license?.spdx_id || null,
     links: {
-      source: details.html_url,
+      source: comingSoon
+        ? `${details.html_url}/tree/${encodeURIComponent(contentBranch)}`
+        : details.html_url,
       issues: details.has_issues ? `${details.html_url}/issues` : null,
       wiki: details.has_wiki ? `${details.html_url}/wiki` : null,
       spigot: propertyValue(properties, "plugin_spigot"),
       modrinth: propertyValue(properties, "plugin_modrinth")
     },
-    releaseData: await getReleaseData(details.full_name)
+    releaseData
   };
 }
 
