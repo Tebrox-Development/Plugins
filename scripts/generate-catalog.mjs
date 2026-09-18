@@ -1,4 +1,4 @@
-import { readFile, writeFile } from "node:fs/promises";
+import { writeFile } from "node:fs/promises";
 
 const ORG = "Tebrox-Development";
 const API = "https://api.github.com";
@@ -136,18 +136,9 @@ async function getReleaseData(repo) {
   };
 }
 
-async function loadLegacy() {
-  try {
-    return JSON.parse(await readFile("plugins.json", "utf8"));
-  } catch {
-    return [];
-  }
-}
-
-async function buildAutomaticEntry(repo, legacyByRepo) {
+async function buildAutomaticEntry(repo) {
   const details = await request(`/repos/${repo.full_name}`);
   const properties = await getCustomProperties(repo.full_name);
-  const legacy = legacyByRepo.get(repo.full_name);
 
   const configuredPlatforms = propertyValue(properties, "plugin_platforms");
   const topicPlatforms = (details.topics || [])
@@ -158,24 +149,22 @@ async function buildAutomaticEntry(repo, legacyByRepo) {
     ? configuredPlatforms
     : configuredPlatforms
       ? String(configuredPlatforms).split(",").map(value => value.trim()).filter(Boolean)
-      : legacy?.platforms || topicPlatforms;
+      : topicPlatforms;
 
   const image =
     await findBanner(details.full_name, details.default_branch) ||
-    legacy?.image ||
     details.owner?.avatar_url ||
     "";
 
   return {
     name: titleFromRepo(details.name),
     repo: details.full_name,
-    description: details.description || legacy?.description || "No description provided.",
-    type: propertyValue(properties, "plugin_type") || legacy?.type || "Plugin",
+    description: details.description || "No description provided.",
+    type: propertyValue(properties, "plugin_type") || "Plugin",
     status: details.archived ? "Archived" : "Active",
     platforms,
     compatibility:
       propertyValue(properties, "plugin_compatibility") ||
-      legacy?.compatibility ||
       "See project documentation",
     image,
     language: details.language,
@@ -184,41 +173,14 @@ async function buildAutomaticEntry(repo, legacyByRepo) {
       source: details.html_url,
       issues: details.has_issues ? `${details.html_url}/issues` : null,
       wiki: details.has_wiki ? `${details.html_url}/wiki` : null,
-      spigot: propertyValue(properties, "plugin_spigot") || legacy?.links?.spigot || null,
-      modrinth: propertyValue(properties, "plugin_modrinth") || legacy?.links?.modrinth || null
-    },
-    releaseData: await getReleaseData(details.full_name)
-  };
-}
-
-async function enrichLegacy(plugin) {
-  const details = await request(`/repos/${plugin.repo}`);
-  const image =
-    await findBanner(details.full_name, details.default_branch) ||
-    plugin.image ||
-    details.owner?.avatar_url ||
-    "";
-
-  return {
-    ...plugin,
-    name: plugin.name || titleFromRepo(details.name),
-    description: plugin.description || details.description || "No description provided.",
-    status: details.archived ? "Archived" : (plugin.status || "Active"),
-    image,
-    links: {
-      ...plugin.links,
-      source: details.html_url,
-      issues: details.has_issues ? `${details.html_url}/issues` : null,
-      wiki: details.has_wiki ? `${details.html_url}/wiki` : plugin.links?.wiki || null
+      spigot: propertyValue(properties, "plugin_spigot"),
+      modrinth: propertyValue(properties, "plugin_modrinth")
     },
     releaseData: await getReleaseData(details.full_name)
   };
 }
 
 async function main() {
-  const legacy = await loadLegacy();
-  const legacyByRepo = new Map(legacy.map(plugin => [plugin.repo, plugin]));
-
   const repos = await paged(`/orgs/${ORG}/repos?type=public&sort=full_name`);
   const catalogueRepos = [];
 
@@ -230,19 +192,13 @@ async function main() {
     }
   }
 
-  let catalogue;
+  const catalogue = await Promise.all(
+    catalogueRepos.map(repo => buildAutomaticEntry(repo))
+  );
 
-  if (catalogueRepos.length) {
-    catalogue = await Promise.all(
-      catalogueRepos.map(repo => buildAutomaticEntry(repo, legacyByRepo))
-    );
-    console.log(`Generated catalogue from GitHub Custom Properties: ${catalogue.length} plugin(s).`);
-  } else {
-    catalogue = await Promise.all(legacy.map(enrichLegacy));
-    console.log(
-      `No repositories with plugin_catalog=true found; using legacy plugins.json fallback (${catalogue.length} plugin(s)).`
-    );
-  }
+  console.log(
+    `Generated catalogue from GitHub Custom Properties: ${catalogue.length} plugin(s).`
+  );
 
   catalogue.sort((a, b) => a.name.localeCompare(b.name));
   await writeFile("catalog.json", JSON.stringify(catalogue, null, 2) + "\n", "utf8");
