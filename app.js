@@ -11,6 +11,7 @@ let activeFilter = "all";
 document.querySelector("#year").textContent = new Date().getFullYear();
 
 const number = new Intl.NumberFormat("en-US");
+const optionalDependencyPreview = 4;
 
 function link(label, url) {
   if (!url) return null;
@@ -114,12 +115,41 @@ function buildCard(plugin) {
       const list = document.createElement("div");
       list.className = "dependency-list";
 
-      values.forEach(value => {
+      const hiddenBadges = [];
+
+      values.forEach((value, index) => {
         const badge = document.createElement("span");
         badge.className = optional ? "dependency optional" : "dependency required";
         badge.textContent = value;
+
+        if (optional && index >= optionalDependencyPreview) {
+          badge.hidden = true;
+          hiddenBadges.push(badge);
+        }
+
         list.appendChild(badge);
       });
+
+      if (optional && hiddenBadges.length) {
+        const toggle = document.createElement("button");
+        toggle.type = "button";
+        toggle.className = "dependency-toggle";
+        toggle.textContent = `+${hiddenBadges.length} more`;
+        toggle.setAttribute("aria-expanded", "false");
+
+        toggle.addEventListener("click", () => {
+          const expanded = toggle.getAttribute("aria-expanded") === "true";
+          hiddenBadges.forEach(badge => {
+            badge.hidden = expanded;
+          });
+          toggle.setAttribute("aria-expanded", String(!expanded));
+          toggle.textContent = expanded
+            ? `+${hiddenBadges.length} more`
+            : "Show less";
+        });
+
+        list.appendChild(toggle);
+      }
 
       row.appendChild(list);
       dependencySection.appendChild(row);
