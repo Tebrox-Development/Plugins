@@ -35,6 +35,7 @@ jobs:
       - name: Generate plugin catalogue
         run: node scripts/generate-catalog.mjs
         env:
+          CATALOG_GITHUB_TOKEN: ${{ secrets.CATALOG_GITHUB_TOKEN }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Configure Pages
