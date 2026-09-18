@@ -12,49 +12,6 @@ document.querySelector("#year").textContent = new Date().getFullYear();
 
 const number = new Intl.NumberFormat("en-US");
 
-async function getReleaseData(repo) {
-  const latestEndpoint = `https://api.github.com/repos/${repo}/releases/latest`;
-  const releasesEndpoint = `https://api.github.com/repos/${repo}/releases?per_page=100`;
-
-  const [latestResponse, releasesResponse] = await Promise.all([
-    fetch(latestEndpoint, {
-      headers: { Accept: "application/vnd.github+json" }
-    }),
-    fetch(releasesEndpoint, {
-      headers: { Accept: "application/vnd.github+json" }
-    })
-  ]);
-
-  if (!latestResponse.ok) {
-    throw new Error(`GitHub latest release API returned ${latestResponse.status}`);
-  }
-
-  const latest = await latestResponse.json();
-  const releases = releasesResponse.ok ? await releasesResponse.json() : [];
-
-  const jar = (latest.assets || []).find(asset =>
-    asset.name.toLowerCase().endsWith(".jar") &&
-    !asset.name.toLowerCase().endsWith(".jar.sha256")
-  );
-
-  const totalDownloads = releases
-    .filter(release => !release.draft)
-    .flatMap(release => release.assets || [])
-    .filter(asset => asset.name.toLowerCase().endsWith(".jar"))
-    .reduce((sum, asset) => sum + (asset.download_count || 0), 0);
-
-  const latestDownloadUrl = jar
-    ? `https://github.com/${repo}/releases/latest/download/${encodeURIComponent(jar.name)}`
-    : latest.html_url;
-
-  return {
-    version: latest.tag_name.replace(/^v/i, ""),
-    releaseUrl: latest.html_url,
-    downloadUrl: latestDownloadUrl,
-    totalDownloads
-  };
-}
-
 function link(label, url) {
   if (!url) return null;
   const a = document.createElement("a");
@@ -197,21 +154,11 @@ function render() {
 
 async function init() {
   try {
-    const response = await fetch("plugins.json");
-    if (!response.ok) throw new Error("Could not load plugins.json");
+    const response = await fetch("catalog.json", { cache: "no-store" });
+    if (!response.ok) throw new Error("Could not load catalog.json");
     plugins = await response.json();
 
     count.textContent = `${plugins.length} public ${plugins.length === 1 ? "project" : "projects"}`;
-
-    await Promise.all(plugins.map(async plugin => {
-      try {
-        plugin.releaseData = await getReleaseData(plugin.repo);
-      } catch (error) {
-        console.warn(`Release data unavailable for ${plugin.repo}:`, error);
-        plugin.releaseData = null;
-      }
-    }));
-
     render();
   } catch (error) {
     console.error(error);
