@@ -80,13 +80,30 @@ function titleFromRepo(name) {
   return name.replace(/-/g, " ");
 }
 
+function rawFileUrl(repo, branch, path) {
+  const encodedRepo = repo.split("/").map(encodeURIComponent).join("/");
+  const encodedBranch = branch.split("/").map(encodeURIComponent).join("/");
+  const encodedPath = path.split("/").map(encodeURIComponent).join("/");
+  return `https://raw.githubusercontent.com/${encodedRepo}/${encodedBranch}/${encodedPath}`;
+}
+
+async function rawFileExists(repo, branch, path) {
+  try {
+    const response = await fetch(rawFileUrl(repo, branch, path), { method: "HEAD" });
+    return response.ok;
+  } catch {
+    return false;
+  }
+}
+
 async function branchExists(repo, branch) {
-  return Boolean(
-    await request(
-      `/repos/${repo}/branches/${encodeURIComponent(branch)}`,
-      { allow404: true }
-    )
-  );
+  for (const probe of ["README.md", "pom.xml", "build.gradle", "build.gradle.kts"]) {
+    if (await rawFileExists(repo, branch, probe)) {
+      return true;
+    }
+  }
+
+  return false;
 }
 
 async function getContentBranch(repo, defaultBranch, comingSoon) {
@@ -102,13 +119,13 @@ async function getContentBranch(repo, defaultBranch, comingSoon) {
 }
 
 async function fetchTextFile(repo, path, branch) {
-  const file = await request(
-    `/repos/${repo}/contents/${path}?ref=${encodeURIComponent(branch)}`,
-    { allow404: true }
-  );
-
-  if (!file || file.type !== "file" || !file.content) return null;
-  return Buffer.from(file.content.replace(/\n/g, ""), "base64").toString("utf8");
+  try {
+    const response = await fetch(rawFileUrl(repo, branch, path));
+    if (!response.ok) return null;
+    return response.text();
+  } catch {
+    return null;
+  }
 }
 
 function parsePaperDependencies(content) {
@@ -219,29 +236,30 @@ async function getPluginDependencies(repo, branch) {
 }
 
 async function findBanner(repo, branch) {
-  const locations = [
-    { dir: "docs/assets", exact: true },
-    { dir: "docs/assets", exact: false },
-    { dir: "assets", exact: true }
+  const repoName = repo.split("/").pop();
+  const names = [
+    "banner.png",
+    "banner.webp",
+    "banner.jpg",
+    "banner.jpeg",
+    `${repoName.toLowerCase()}-banner.png`,
+    `${repoName.toLowerCase()}-banner.webp`,
+    `${repoName.toLowerCase()}-banner.jpg`,
+    `${repoName.toLowerCase()}-banner.jpeg`
   ];
 
-  for (const location of locations) {
-    const entries = await request(
-      `/repos/${repo}/contents/${location.dir}?ref=${encodeURIComponent(branch)}`,
-      { allow404: true }
-    );
+  const candidates = [
+    ...names.map(name => `docs/assets/${name}`),
+    "assets/banner.png",
+    "assets/banner.webp",
+    "assets/banner.jpg",
+    "assets/banner.jpeg"
+  ];
 
-    if (!Array.isArray(entries)) continue;
-
-    const images = entries.filter(entry =>
-      entry.type === "file" && /\.(png|webp|jpe?g)$/i.test(entry.name)
-    );
-
-    const banner = location.exact
-      ? images.find(entry => /^banner\.(png|webp|jpe?g)$/i.test(entry.name))
-      : images.find(entry => /-banner\.(png|webp|jpe?g)$/i.test(entry.name));
-
-    if (banner?.download_url) return banner.download_url;
+  for (const path of candidates) {
+    if (await rawFileExists(repo, branch, path)) {
+      return rawFileUrl(repo, branch, path);
+    }
   }
 
   return null;
