@@ -57,20 +57,35 @@ function propertyValue(properties, name) {
 }
 
 async function getCustomProperties(repo) {
-  const url = `${API}/repos/${repo}/properties/values`;
-  const response = await fetch(url, {
-    headers: {
-      Accept: "application/vnd.github+json",
-      "User-Agent": headers["User-Agent"]
-    }
-  });
+  const publicHeaders = {
+    Accept: "application/vnd.github+json",
+    "User-Agent": headers["User-Agent"]
+  };
 
-  if (response.status === 404) return {};
-  if (!response.ok) {
-    throw new Error(`GitHub custom properties API ${response.status}: ${url}`);
+  const repoUrl = `${API}/repos/${repo}`;
+  const repoResponse = await fetch(repoUrl, { headers: publicHeaders });
+
+  if (repoResponse.ok) {
+    const details = await repoResponse.json();
+    if (
+      details.custom_properties &&
+      Object.keys(details.custom_properties).length
+    ) {
+      return details.custom_properties;
+    }
   }
 
-  const values = await response.json();
+  const valuesUrl = `${API}/repos/${repo}/properties/values`;
+  const valuesResponse = await fetch(valuesUrl, { headers: publicHeaders });
+
+  if (valuesResponse.status === 404) return {};
+  if (!valuesResponse.ok) {
+    throw new Error(
+      `GitHub custom properties API ${valuesResponse.status}: ${valuesUrl}`
+    );
+  }
+
+  const values = await valuesResponse.json();
   return Object.fromEntries(
     values.map(entry => [entry.property_name, entry.value])
   );
@@ -292,9 +307,8 @@ async function getReleaseData(repo) {
   };
 }
 
-async function buildAutomaticEntry(repo) {
+async function buildAutomaticEntry(repo, properties) {
   const details = await request(`/repos/${repo.full_name}`);
-  const properties = await getCustomProperties(repo.full_name);
   const releaseData = await getReleaseData(details.full_name);
   const comingSoon = !details.archived && !releaseData;
   const contentBranch = await getContentBranch(
@@ -360,12 +374,14 @@ async function main() {
     const properties = await getCustomProperties(repo.full_name);
     const enabled = propertyValue(properties, "plugin_catalog");
     if (enabled === true || String(enabled).toLowerCase() === "true") {
-      catalogueRepos.push(repo);
+      catalogueRepos.push({ repo, properties });
     }
   }
 
   const catalogue = await Promise.all(
-    catalogueRepos.map(repo => buildAutomaticEntry(repo))
+    catalogueRepos.map(({ repo, properties }) =>
+      buildAutomaticEntry(repo, properties)
+    )
   );
 
   console.log(
