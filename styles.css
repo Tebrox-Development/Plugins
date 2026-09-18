@@ -168,6 +168,7 @@ h1 span {
 .plugin-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
   gap: 22px;
   padding-bottom: 64px;
 }
@@ -337,6 +338,28 @@ h1 span {
   border-color: var(--border);
   background: var(--surface-2);
   color: #9da8b6;
+}
+
+.dependency[hidden] {
+  display: none;
+}
+
+.dependency-toggle {
+  padding: 5px 9px;
+  border: 1px dashed rgba(143,209,79,.28);
+  border-radius: 7px;
+  background: rgba(143,209,79,.06);
+  color: #b8d69a;
+  font: inherit;
+  font-size: .76rem;
+  cursor: pointer;
+  transition: border-color .18s ease, background .18s ease, color .18s ease;
+}
+
+.dependency-toggle:hover {
+  border-color: rgba(143,209,79,.5);
+  background: rgba(143,209,79,.11);
+  color: #d5efbc;
 }
 
 .release-meta {
