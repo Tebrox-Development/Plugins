@@ -1,6 +1,5 @@
 const grid = document.querySelector("#plugin-grid");
 const template = document.querySelector("#plugin-template");
-const count = document.querySelector("#plugin-count");
 const searchInput = document.querySelector("#search");
 const filters = [...document.querySelectorAll(".filter")];
 const supportUrl = "https://discord.gg/QRcVgVkAZr";
@@ -252,12 +251,10 @@ async function init() {
     if (!response.ok) throw new Error("Could not load catalog.json");
     plugins = await response.json();
 
-    count.textContent = `${plugins.length} public ${plugins.length === 1 ? "project" : "projects"}`;
     render();
   } catch (error) {
     console.error(error);
     grid.innerHTML = `<div class="empty-state">The plugin catalogue could not be loaded.</div>`;
-    count.textContent = "Plugin catalogue";
   }
 }
 
