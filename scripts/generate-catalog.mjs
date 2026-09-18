@@ -2,7 +2,7 @@ import { writeFile } from "node:fs/promises";
 
 const ORG = "Tebrox-Development";
 const API = "https://api.github.com";
-const token = process.env.GITHUB_TOKEN || "";
+const token = process.env.CATALOG_GITHUB_TOKEN || process.env.GITHUB_TOKEN || "";
 
 const headers = {
   Accept: "application/vnd.github+json",
@@ -57,35 +57,27 @@ function propertyValue(properties, name) {
 }
 
 async function getCustomProperties(repo) {
-  const publicHeaders = {
-    Accept: "application/vnd.github+json",
-    "User-Agent": headers["User-Agent"]
-  };
+  const valuesUrl = `${API}/repos/${repo}/properties/values`;
+  let response = await fetch(valuesUrl, { headers });
 
-  const repoUrl = `${API}/repos/${repo}`;
-  const repoResponse = await fetch(repoUrl, { headers: publicHeaders });
-
-  if (repoResponse.ok) {
-    const details = await repoResponse.json();
-    if (
-      details.custom_properties &&
-      Object.keys(details.custom_properties).length
-    ) {
-      return details.custom_properties;
-    }
+  if (token && (response.status === 403 || response.status === 404)) {
+    response = await fetch(valuesUrl, {
+      headers: {
+        Accept: "application/vnd.github+json",
+        "User-Agent": headers["User-Agent"]
+      }
+    });
   }
 
-  const valuesUrl = `${API}/repos/${repo}/properties/values`;
-  const valuesResponse = await fetch(valuesUrl, { headers: publicHeaders });
-
-  if (valuesResponse.status === 404) return {};
-  if (!valuesResponse.ok) {
+  if (response.status === 404) return {};
+  if (!response.ok) {
     throw new Error(
-      `GitHub custom properties API ${valuesResponse.status}: ${valuesUrl}`
+      `GitHub custom properties API ${response.status}: ${valuesUrl}. ` +
+      "Configure the CATALOG_GITHUB_TOKEN repository secret with Metadata read access."
     );
   }
 
-  const values = await valuesResponse.json();
+  const values = await response.json();
   return Object.fromEntries(
     values.map(entry => [entry.property_name, entry.value])
   );
