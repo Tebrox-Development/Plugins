@@ -359,6 +359,7 @@ async function buildAutomaticEntry(repo, properties) {
     description: details.description || "No description provided.",
     type: propertyValue(properties, "plugin_type") || "Plugin",
     status: details.archived ? "Archived" : comingSoon ? "Coming Soon" : "Active",
+    createdAt: details.created_at,
     contentBranch,
     platforms,
     compatibility: comingSoon
@@ -414,7 +415,12 @@ async function main() {
     const statusDifference =
       (statusOrder[a.status] ?? 99) - (statusOrder[b.status] ?? 99);
 
-    return statusDifference || a.name.localeCompare(b.name);
+    if (statusDifference) return statusDifference;
+
+    const createdDifference =
+      Date.parse(b.createdAt || 0) - Date.parse(a.createdAt || 0);
+
+    return createdDifference || a.name.localeCompare(b.name);
   });
   await writeFile("catalog.json", JSON.stringify(catalogue, null, 2) + "\n", "utf8");
 }
