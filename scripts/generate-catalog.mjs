@@ -215,10 +215,18 @@ function parsePluginList(content, key) {
 
   return values;
 }
-async function getPluginDependencies(repo, branch) {
+function parseMavenModules(content) {
+  return [...content.matchAll(/<module>\s*([^<]+?)\s*<\/module>/g)]
+    .map(match => match[1].trim().replace(/^\.\//, "").replace(/\/$/, ""))
+    .filter(module => module && !module.includes(".."));
+}
+
+async function readPluginDescriptor(repo, branch, basePath = "") {
+  const prefix = basePath ? `${basePath}/` : "";
+
   const paperPlugin = await fetchTextFile(
     repo,
-    "src/main/resources/paper-plugin.yml",
+    `${prefix}src/main/resources/paper-plugin.yml`,
     branch
   );
 
@@ -228,7 +236,7 @@ async function getPluginDependencies(repo, branch) {
 
   const pluginYml = await fetchTextFile(
     repo,
-    "src/main/resources/plugin.yml",
+    `${prefix}src/main/resources/plugin.yml`,
     branch
   );
 
@@ -237,6 +245,22 @@ async function getPluginDependencies(repo, branch) {
       required: parsePluginList(pluginYml, "depend"),
       optional: parsePluginList(pluginYml, "softdepend")
     };
+  }
+
+  return null;
+}
+
+async function getPluginDependencies(repo, branch) {
+  const rootDescriptor = await readPluginDescriptor(repo, branch);
+  if (rootDescriptor) return rootDescriptor;
+
+  const pom = await fetchTextFile(repo, "pom.xml", branch);
+  if (!pom) return { required: [], optional: [] };
+
+  const modules = parseMavenModules(pom);
+  for (const module of modules) {
+    const descriptor = await readPluginDescriptor(repo, branch, module);
+    if (descriptor) return descriptor;
   }
 
   return { required: [], optional: [] };
@@ -252,7 +276,11 @@ async function findBanner(repo, branch) {
     `${repoName.toLowerCase()}-banner.png`,
     `${repoName.toLowerCase()}-banner.webp`,
     `${repoName.toLowerCase()}-banner.jpg`,
-    `${repoName.toLowerCase()}-banner.jpeg`
+    `${repoName.toLowerCase()}-banner.jpeg`,
+    `${repoName.toLowerCase()}_banner.png`,
+    `${repoName.toLowerCase()}_banner.webp`,
+    `${repoName.toLowerCase()}_banner.jpg`,
+    `${repoName.toLowerCase()}_banner.jpeg`
   ];
 
   const candidates = [
