@@ -404,7 +404,18 @@ async function main() {
     `Generated catalogue from GitHub Custom Properties: ${catalogue.length} plugin(s).`
   );
 
-  catalogue.sort((a, b) => a.name.localeCompare(b.name));
+  const statusOrder = {
+    "Coming Soon": 0,
+    "Active": 1,
+    "Archived": 2
+  };
+
+  catalogue.sort((a, b) => {
+    const statusDifference =
+      (statusOrder[a.status] ?? 99) - (statusOrder[b.status] ?? 99);
+
+    return statusDifference || a.name.localeCompare(b.name);
+  });
   await writeFile("catalog.json", JSON.stringify(catalogue, null, 2) + "\n", "utf8");
 }
 
