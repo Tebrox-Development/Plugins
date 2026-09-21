@@ -131,29 +131,39 @@ function marketplaceFromEntry(entry) {
 }
 
 async function isMarketplacePublic(marketplace) {
-  if (marketplace.key !== "modrinth") return true;
-
   try {
-    const parsed = new URL(marketplace.url);
-    const parts = parsed.pathname.split("/").filter(Boolean);
-    const project = parts[1];
+    if (marketplace.key === "modrinth") {
+      const parsed = new URL(marketplace.url);
+      const parts = parsed.pathname.split("/").filter(Boolean);
+      const project = parts[1];
 
-    if (!project) return true;
+      if (!project) return true;
 
-    const response = await fetch(
-      `https://api.modrinth.com/v2/project/${encodeURIComponent(decodeURIComponent(project))}`,
-      {
-        headers: {
-          "User-Agent": "Tebrox-Development/plugin-catalog"
+      const response = await fetch(
+        `https://api.modrinth.com/v2/project/${encodeURIComponent(decodeURIComponent(project))}`,
+        {
+          headers: {
+            "User-Agent": "Tebrox-Development/plugin-catalog"
+          }
         }
+      );
+
+      return response.status !== 404;
+    }
+
+    const response = await fetch(marketplace.url, {
+      method: "GET",
+      redirect: "follow",
+      headers: {
+        "User-Agent": "Tebrox-Development/plugin-catalog"
       }
-    );
+    });
 
-    if (response.status === 404) return false;
-
-    // Do not hide an already configured link because of a temporary API issue.
-    return true;
+    // Only hide on a definitive "not found" response. Other statuses can be
+    // caused by bot protection, rate limits or temporary marketplace issues.
+    return response.status !== 404;
   } catch {
+    // Keep configured links visible when the availability check itself fails.
     return true;
   }
 }
