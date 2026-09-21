@@ -130,7 +130,35 @@ function marketplaceFromEntry(entry) {
   return marketplaceFromUrl(entry);
 }
 
-function getMarketplaces(properties) {
+async function isMarketplacePublic(marketplace) {
+  if (marketplace.key !== "modrinth") return true;
+
+  try {
+    const parsed = new URL(marketplace.url);
+    const parts = parsed.pathname.split("/").filter(Boolean);
+    const project = parts[1];
+
+    if (!project) return true;
+
+    const response = await fetch(
+      `https://api.modrinth.com/v2/project/${encodeURIComponent(decodeURIComponent(project))}`,
+      {
+        headers: {
+          "User-Agent": "Tebrox-Development/plugin-catalog"
+        }
+      }
+    );
+
+    if (response.status === 404) return false;
+
+    // Do not hide an already configured link because of a temporary API issue.
+    return true;
+  } catch {
+    return true;
+  }
+}
+
+async function getMarketplaces(properties) {
   const configured = parseMarketplaceEntries(
     propertyValue(properties, "plugin_marketplaces")
   );
@@ -141,10 +169,15 @@ function getMarketplaces(properties) {
   ].filter(Boolean);
 
   const entries = configured.length ? configured : legacy;
-
-  return [...new Set(entries)]
+  const marketplaces = [...new Set(entries)]
     .map(marketplaceFromEntry)
     .filter(Boolean);
+
+  const visibility = await Promise.all(
+    marketplaces.map(isMarketplacePublic)
+  );
+
+  return marketplaces.filter((_, index) => visibility[index]);
 }
 
 async function getCustomProperties(repo) {
@@ -467,7 +500,7 @@ async function buildAutomaticEntry(repo, properties) {
       issues: details.has_issues ? `${details.html_url}/issues` : null,
       wiki: details.has_wiki ? `${details.html_url}/wiki` : null
     },
-    marketplaces: getMarketplaces(properties),
+    marketplaces: await getMarketplaces(properties),
     dependencies,
     releaseData
   };
