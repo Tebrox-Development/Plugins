@@ -22,26 +22,29 @@ function link(label, url) {
   return a;
 }
 
-function marketplaceLink(label, url, platform, status) {
-  if (!url) return null;
+function marketplaceLink(marketplace) {
+  if (!marketplace?.url) return null;
 
   const a = document.createElement("a");
-  a.href = url;
+  a.href = marketplace.url;
   a.target = "_blank";
   a.rel = "noopener";
-  a.className = `marketplace-link ${platform}`;
+  a.className = `marketplace-link ${marketplace.key || "other"}`;
+
+  if (marketplace.icon) {
+    const icon = document.createElement("img");
+    icon.className = "marketplace-icon";
+    icon.src = marketplace.icon;
+    icon.alt = "";
+    icon.loading = "lazy";
+    icon.decoding = "async";
+    a.appendChild(icon);
+  }
 
   const name = document.createElement("span");
   name.className = "marketplace-name";
-  name.textContent = label;
+  name.textContent = marketplace.name || marketplace.url;
   a.appendChild(name);
-
-  if (status) {
-    const badge = document.createElement("span");
-    badge.className = "marketplace-status";
-    badge.textContent = status;
-    a.appendChild(badge);
-  }
 
   return a;
 }
@@ -178,10 +181,7 @@ function buildCard(plugin) {
 
   const secondary = fragment.querySelector(".secondary-links");
 
-  const marketplaces = [
-    ["SpigotMC", plugin.links.spigot, "spigot", plugin.marketplaceStatus?.spigot],
-    ["Modrinth", plugin.links.modrinth, "modrinth", plugin.marketplaceStatus?.modrinth]
-  ].filter(([, url]) => Boolean(url));
+  const marketplaces = plugin.marketplaces || [];
 
   if (marketplaces.length) {
     const marketplaceSection = document.createElement("div");
@@ -195,8 +195,8 @@ function buildCard(plugin) {
     const marketplaceLinks = document.createElement("div");
     marketplaceLinks.className = "marketplace-links";
 
-    marketplaces.forEach(([label, url, platform, status]) => {
-      const el = marketplaceLink(label, url, platform, status);
+    marketplaces.forEach(marketplace => {
+      const el = marketplaceLink(marketplace);
       if (el) marketplaceLinks.appendChild(el);
     });
 
