@@ -56,6 +56,72 @@ function propertyValue(properties, name) {
   return value === null || value === undefined || value === "" ? null : value;
 }
 
+function parseMarketplaceUrls(value) {
+  if (!value) return [];
+
+  const values = Array.isArray(value) ? value : [value];
+
+  return values
+    .flatMap(entry => String(entry).split(/[;\r\n]+/))
+    .map(entry => entry.trim())
+    .filter(Boolean);
+}
+
+function marketplaceFromUrl(url) {
+  try {
+    const parsed = new URL(url);
+    const hostname = parsed.hostname.toLowerCase().replace(/^www\./, "");
+
+    const known = {
+      "spigotmc.org": {
+        key: "spigot",
+        name: "SpigotMC",
+        icon: "https://www.spigotmc.org/favicon.ico"
+      },
+      "modrinth.com": {
+        key: "modrinth",
+        name: "Modrinth",
+        icon: "https://modrinth.com/favicon.ico"
+      },
+      "hangar.papermc.io": {
+        key: "hangar",
+        name: "Hangar",
+        icon: "https://hangar.papermc.io/favicon.ico"
+      }
+    };
+
+    const platform = known[hostname] || {
+      key: "other",
+      name: hostname,
+      icon: `${parsed.protocol}//${parsed.hostname}/favicon.ico`
+    };
+
+    return {
+      ...platform,
+      url
+    };
+  } catch {
+    return null;
+  }
+}
+
+function getMarketplaces(properties) {
+  const configured = parseMarketplaceUrls(
+    propertyValue(properties, "plugin_marketplaces")
+  );
+
+  const legacy = [
+    propertyValue(properties, "plugin_spigot"),
+    propertyValue(properties, "plugin_modrinth")
+  ].filter(Boolean);
+
+  const urls = configured.length ? configured : legacy;
+
+  return [...new Set(urls)]
+    .map(marketplaceFromUrl)
+    .filter(Boolean);
+}
+
 async function getCustomProperties(repo) {
   const valuesUrl = `${API}/repos/${repo}/properties/values`;
   let response = await fetch(valuesUrl, { headers });
@@ -374,10 +440,9 @@ async function buildAutomaticEntry(repo, properties) {
         ? `${details.html_url}/tree/${encodeURIComponent(contentBranch)}`
         : details.html_url,
       issues: details.has_issues ? `${details.html_url}/issues` : null,
-      wiki: details.has_wiki ? `${details.html_url}/wiki` : null,
-      spigot: propertyValue(properties, "plugin_spigot"),
-      modrinth: propertyValue(properties, "plugin_modrinth")
+      wiki: details.has_wiki ? `${details.html_url}/wiki` : null
     },
+    marketplaces: getMarketplaces(properties),
     dependencies,
     releaseData
   };
