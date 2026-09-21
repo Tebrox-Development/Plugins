@@ -56,7 +56,7 @@ function propertyValue(properties, name) {
   return value === null || value === undefined || value === "" ? null : value;
 }
 
-function parseMarketplaceUrls(value) {
+function parseMarketplaceEntries(value) {
   if (!value) return [];
 
   const values = Array.isArray(value) ? value : [value];
@@ -105,8 +105,33 @@ function marketplaceFromUrl(url) {
   }
 }
 
+function marketplaceFromEntry(entry) {
+  const spigot = entry.match(/^s:(\d+)$/i);
+  if (spigot) {
+    return marketplaceFromUrl(
+      `https://www.spigotmc.org/resources/${spigot[1]}/`
+    );
+  }
+
+  const modrinth = entry.match(/^m:([^\s;]+)$/i);
+  if (modrinth) {
+    return marketplaceFromUrl(
+      `https://modrinth.com/plugin/${encodeURIComponent(modrinth[1])}`
+    );
+  }
+
+  const hangar = entry.match(/^h:([^/\s;]+)\/([^\s;]+)$/i);
+  if (hangar) {
+    return marketplaceFromUrl(
+      `https://hangar.papermc.io/${encodeURIComponent(hangar[1])}/${encodeURIComponent(hangar[2])}`
+    );
+  }
+
+  return marketplaceFromUrl(entry);
+}
+
 function getMarketplaces(properties) {
-  const configured = parseMarketplaceUrls(
+  const configured = parseMarketplaceEntries(
     propertyValue(properties, "plugin_marketplaces")
   );
 
@@ -115,10 +140,10 @@ function getMarketplaces(properties) {
     propertyValue(properties, "plugin_modrinth")
   ].filter(Boolean);
 
-  const urls = configured.length ? configured : legacy;
+  const entries = configured.length ? configured : legacy;
 
-  return [...new Set(urls)]
-    .map(marketplaceFromUrl)
+  return [...new Set(entries)]
+    .map(marketplaceFromEntry)
     .filter(Boolean);
 }
 
