@@ -36,14 +36,12 @@
   transition: transform .18s ease, border-color .18s ease, background .18s ease;
 }
 
-.marketplace-link::before {
-  display: grid;
-  place-items: center;
+.marketplace-icon {
   width: 22px;
   height: 22px;
-  border-radius: 6px;
-  font-size: .69rem;
-  font-weight: 900;
+  flex: 0 0 22px;
+  object-fit: contain;
+  border-radius: 5px;
 }
 
 .marketplace-link:hover {
@@ -53,12 +51,6 @@
 .marketplace-link.spigot {
   border-color: rgba(244, 109, 37, .34);
   background: rgba(244, 109, 37, .08);
-}
-
-.marketplace-link.spigot::before {
-  content: "S";
-  background: #f46d25;
-  color: #17100c;
 }
 
 .marketplace-link.spigot:hover {
@@ -71,13 +63,18 @@
   background: rgba(27, 217, 106, .08);
 }
 
-.marketplace-link.modrinth::before {
-  content: "M";
-  background: #1bd96a;
-  color: #07150d;
-}
-
 .marketplace-link.modrinth:hover {
   border-color: rgba(27, 217, 106, .7);
   background: rgba(27, 217, 106, .14);
+}
+
+
+.marketplace-link.hangar {
+  border-color: rgba(80, 145, 220, .34);
+  background: rgba(80, 145, 220, .08);
+}
+
+.marketplace-link.hangar:hover {
+  border-color: rgba(80, 145, 220, .7);
+  background: rgba(80, 145, 220, .14);
 }
