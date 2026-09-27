@@ -80,7 +80,7 @@ function buildCard(plugin) {
 
   if (comingSoon) {
     releaseMeta.remove();
-    versionBadge.textContent = "Coming Soon";
+    versionBadge.remove();
   } else {
     fragment.querySelector(".compatibility").textContent = plugin.compatibility;
     fragment.querySelector(".downloads").textContent =
