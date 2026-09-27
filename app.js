@@ -80,8 +80,8 @@ function buildCard(plugin) {
   } else {
     fragment.querySelector(".compatibility").textContent = plugin.compatibility;
     fragment.querySelector(".downloads").textContent =
-      Number.isFinite(release?.totalDownloads)
-        ? number.format(release.totalDownloads)
+      Number.isFinite(plugin.downloadStats?.total)
+        ? number.format(plugin.downloadStats.total)
         : "Unavailable";
     versionBadge.textContent = release?.version
       ? `v${release.version}`
