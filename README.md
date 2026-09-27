@@ -1,46 +1,87 @@
 # Tebrox Plugins
 
-Small static catalogue for public Minecraft plugins maintained by Tebrox-Development.
+Public plugin catalogue for Minecraft plugins developed and maintained by Tebrox-Development.
+
+**Website:** https://plugins.tebrox-development.de/
 
 ## How it works
 
-- `plugins.json` is the curated source of truth for which projects are public.
-- `app.js` reads GitHub Releases directly in the browser.
-- The newest stable release, direct JAR download and total JAR downloads are detected automatically.
-- If GitHub release data is temporarily unavailable, configured fallback versions are still shown.
-- No framework, package manager or build step is required.
+The catalogue is generated automatically during the GitHub Pages deployment.
 
-## Add another plugin
+GitHub is the source of truth:
 
-Add another object to `plugins.json`.
+- public organization repositories are discovered automatically
+- `plugin_catalog=true` controls whether a repository is listed
+- repository custom properties provide plugin type, platforms, compatibility and marketplace links
+- plugin name defaults to the repository name and can be overridden with `plugin_name`
+- plugin dependencies are read from `paper-plugin.yml` or `plugin.yml`
+- release/version/download information is collected from GitHub and configured marketplaces
+- repositories without a published release are shown as **Coming Soon**
+- Coming Soon content prefers `development`, then `dev`, then the default branch
 
-Required fields:
+The generated `catalog.json` is created by `scripts/generate-catalog.mjs` during deployment and is consumed by `app.js`.
 
-- `name`
-- `repo` (`owner/repository`)
-- `description`
-- `type`
-- `status`
-- `platforms`
-- `compatibility`
-- `fallbackVersion`
-- `links.source`
+## Catalogue custom properties
 
-Optional fields include `image`, `links.wiki`, `links.issues`, `links.spigot` and `links.modrinth`.
+| Property | Purpose |
+| --- | --- |
+| `plugin_catalog` | Include/exclude a repository from the catalogue |
+| `plugin_type` | Plugin type, e.g. `Gameplay` or `Library` |
+| `plugin_platforms` | Supported platforms, e.g. `Paper`, `Spigot` |
+| `plugin_compatibility` | Compatibility text shown for active releases |
+| `plugin_name` | Optional display-name override |
+| `plugin_marketplaces` | Marketplace links in compact form |
 
-## GitHub Pages
+Supported compact marketplace entries:
 
-1. Make this repository **public**.
-2. Open **Settings → Pages**.
-3. Set **Source** to **GitHub Actions**.
-4. Run the `Deploy GitHub Pages` workflow if it does not start automatically.
+- `m:<slug>` — Modrinth
+- `h:<owner>/<slug>` — Hangar
+- `s:<resource-id>` — SpigotMC
 
-The default address will then be similar to:
+Multiple entries are separated with `;`.
 
-`https://tebrox-development.github.io/Plugins/`
+Example:
 
-A custom domain such as `plugins.example.com` can be added later under **Settings → Pages → Custom domain**.
+```text
+m:vertexcore;h:Tebrox/VertexCore
+```
 
-## Notes
+## Deployment
 
-GitHub's unauthenticated REST API has a rate limit. This site makes one release-list request per configured plugin per visitor. For a small public catalogue this is normally sufficient. If the catalogue grows substantially, release metadata can later be cached during deployment instead.
+The site is deployed through `.github/workflows/pages.yml` using GitHub Actions on the self-hosted Linux runners.
+
+The workflow:
+
+1. checks out the repository
+2. generates `catalog.json`
+3. configures GitHub Pages
+4. uploads the site artifact
+5. deploys it to GitHub Pages
+
+A scheduled run refreshes catalogue data every 30 minutes.
+
+## Custom domain
+
+The public catalogue uses:
+
+```text
+https://plugins.tebrox-development.de/
+```
+
+GitHub Pages is configured with this custom domain in **Settings → Pages**.
+
+Because deployment uses a custom GitHub Actions workflow, no repository `CNAME` file is required.
+
+DNS:
+
+```text
+plugins  CNAME  tebrox-development.github.io
+```
+
+Discord support is exposed through:
+
+```text
+https://discord.tebrox-development.de
+```
+
+which redirects to the current Tebrox-Development Discord invite.
