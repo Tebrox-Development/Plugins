@@ -10,8 +10,8 @@
   <link rel="apple-touch-icon" href="https://avatars.githubusercontent.com/u/322909744?v=4">
   <link rel="preconnect" href="https://api.github.com">
   <link rel="preconnect" href="https://raw.githubusercontent.com">
-  <link rel="stylesheet" href="styles.css?v=20260927-1">
-  <link rel="stylesheet" href="marketplaces.css?v=20260927-1">
+  <link rel="stylesheet" href="styles.css?v=20260927-2">
+  <link rel="stylesheet" href="marketplaces.css?v=20260927-2">
 </head>
 <body>
   <header class="hero">
@@ -31,11 +31,33 @@
 
   <main class="shell">
     <section class="toolbar" aria-label="Plugin filters">
-      <div class="filters" id="filters">
-        <button class="filter active" data-filter="all">All</button>
-        <button class="filter" data-filter="Gameplay">Gameplay</button>
-        <button class="filter" data-filter="Library">Libraries</button>
+      <div class="filter-groups">
+        <div class="filter-group">
+          <span class="filter-label">Type</span>
+          <div class="filters" id="type-filters">
+            <button class="filter active" data-type="all">All</button>
+            <button class="filter" data-type="Gameplay">Gameplay</button>
+            <button class="filter" data-type="Library">Libraries</button>
+          </div>
+        </div>
+
+        <div class="filter-group">
+          <span class="filter-label">Status</span>
+          <div class="filters" id="status-filters">
+            <button class="filter active" data-status="all">All</button>
+            <button class="filter" data-status="Coming Soon">Coming Soon</button>
+            <button class="filter" data-status="Active">Active</button>
+          </div>
+        </div>
+
+        <div class="filter-group">
+          <span class="filter-label">Download sources</span>
+          <div class="filters" id="source-filters">
+            <button class="filter active" data-source="all">All</button>
+          </div>
+        </div>
       </div>
+
       <label class="search">
         <span class="sr-only">Search plugins</span>
         <input id="search" type="search" placeholder="Search plugins…" autocomplete="off">
@@ -97,6 +119,6 @@
     </article>
   </template>
 
-  <script src="app.js?v=20260927-1" defer></script>
+  <script src="app.js?v=20260927-2" defer></script>
 </body>
 </html>
