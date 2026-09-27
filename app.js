@@ -236,8 +236,7 @@ function render() {
     const statusMatch = activeStatus === "all" || plugin.status === activeStatus;
     const sourceMatch =
       activeSource === "all" ||
-      (activeSource === "github" && Boolean(plugin.links?.source)) ||
-      (plugin.marketplaces || []).some(marketplace => marketplace.key === activeSource);
+(plugin.marketplaces || []).some(marketplace => marketplace.key === activeSource);
 
     const dependencySearch = [
       ...(plugin.dependencies?.required || []),
@@ -271,10 +270,6 @@ function activateFilter(buttons, selected) {
 function buildSourceFilters() {
   const sources = new Map();
 
-  if (plugins.length) {
-    sources.set("github", "GitHub");
-  }
-
   plugins.forEach(plugin => {
     (plugin.marketplaces || []).forEach(marketplace => {
       if (marketplace?.key && marketplace?.name) {
@@ -283,7 +278,7 @@ function buildSourceFilters() {
     });
   });
 
-  const preferredOrder = ["github", "modrinth", "hangar", "spigot", "curseforge"];
+  const preferredOrder = ["modrinth", "hangar", "spigot", "curseforge"];
   const sortedSources = [...sources.entries()].sort(([keyA, nameA], [keyB, nameB]) => {
     const indexA = preferredOrder.indexOf(keyA);
     const indexB = preferredOrder.indexOf(keyB);
