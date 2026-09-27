@@ -190,6 +190,109 @@ async function getMarketplaces(properties) {
   return marketplaces.filter((_, index) => visibility[index]);
 }
 
+async function getMarketplaceDownloads(marketplace) {
+  try {
+    if (marketplace.key === "modrinth") {
+      const parsed = new URL(marketplace.url);
+      const parts = parsed.pathname.split("/").filter(Boolean);
+      const project = parts[1];
+
+      if (!project) return null;
+
+      const response = await fetch(
+        `https://api.modrinth.com/v2/project/${encodeURIComponent(decodeURIComponent(project))}`,
+        {
+          headers: {
+            "User-Agent": "Tebrox-Development/plugin-catalog"
+          }
+        }
+      );
+
+      if (!response.ok) return null;
+
+      const data = await response.json();
+      return Number.isFinite(data.downloads) ? data.downloads : null;
+    }
+
+    if (marketplace.key === "hangar") {
+      const parsed = new URL(marketplace.url);
+      const [owner, project] = parsed.pathname.split("/").filter(Boolean);
+
+      if (!owner || !project) return null;
+
+      const response = await fetch(
+        `https://hangar.papermc.io/api/v1/projects/${encodeURIComponent(decodeURIComponent(owner))}/${encodeURIComponent(decodeURIComponent(project))}`,
+        {
+          headers: {
+            Accept: "application/json",
+            "User-Agent": "Tebrox-Development/plugin-catalog"
+          }
+        }
+      );
+
+      if (!response.ok) return null;
+
+      const data = await response.json();
+      return Number.isFinite(data?.stats?.downloads)
+        ? data.stats.downloads
+        : null;
+    }
+
+    if (marketplace.key === "spigot") {
+      const parsed = new URL(marketplace.url);
+      const resourceId = parsed.pathname.match(/\/resources\/(?:[^/]*\.)?(\d+)(?:\/|$)/i)?.[1];
+
+      if (!resourceId) return null;
+
+      const response = await fetch(
+        `https://api.spiget.org/v2/resources/${resourceId}`,
+        {
+          headers: {
+            Accept: "application/json",
+            "User-Agent": "Tebrox-Development/plugin-catalog"
+          }
+        }
+      );
+
+      if (!response.ok) return null;
+
+      const data = await response.json();
+      return Number.isFinite(data.downloads) ? data.downloads : null;
+    }
+
+    return null;
+  } catch {
+    return null;
+  }
+}
+
+async function getDownloadStats(releaseData, marketplaces) {
+  const github = Number.isFinite(releaseData?.totalDownloads)
+    ? releaseData.totalDownloads
+    : 0;
+
+  const marketplaceValues = await Promise.all(
+    marketplaces.map(async marketplace => ({
+      key: marketplace.key,
+      downloads: await getMarketplaceDownloads(marketplace)
+    }))
+  );
+
+  const byMarketplace = Object.fromEntries(
+    marketplaceValues
+      .filter(entry => Number.isFinite(entry.downloads))
+      .map(entry => [entry.key, entry.downloads])
+  );
+
+  return {
+    github,
+    marketplaces: byMarketplace,
+    total:
+      github +
+      Object.values(byMarketplace).reduce((sum, downloads) => sum + downloads, 0)
+  };
+}
+
 async function getCustomProperties(repo) {
   const valuesUrl = `${API}/repos/${repo}/properties/values`;
   let response = await fetch(valuesUrl, { headers });
@@ -486,6 +589,8 @@ async function buildAutomaticEntry(repo, properties) {
     details.full_name,
     contentBranch
   );
+  const marketplaces = await getMarketplaces(properties);
+  const downloadStats = await getDownloadStats(releaseData, marketplaces);
 
   return {
     name: propertyValue(properties, "plugin_name") || titleFromRepo(details.name),
@@ -510,7 +615,8 @@ async function buildAutomaticEntry(repo, properties) {
       issues: details.has_issues ? `${details.html_url}/issues` : null,
       wiki: details.has_wiki ? `${details.html_url}/wiki` : null
     },
-    marketplaces: await getMarketplaces(properties),
+    marketplaces,
+    downloadStats,
     dependencies,
     releaseData
   };
