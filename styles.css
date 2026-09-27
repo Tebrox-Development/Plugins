@@ -122,7 +122,7 @@ h1 span {
 .toolbar {
   display: grid;
   gap: 18px;
-  margin: 30px 0 26px;
+  margin: 30px 0 36px;
   padding: 20px;
   border: 1px solid var(--border);
   border-radius: 16px;
