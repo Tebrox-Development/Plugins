@@ -1,11 +1,15 @@
 const grid = document.querySelector("#plugin-grid");
 const template = document.querySelector("#plugin-template");
 const searchInput = document.querySelector("#search");
-const filters = [...document.querySelectorAll(".filter")];
+const typeFilters = [...document.querySelectorAll("#type-filters .filter")];
+const statusFilters = [...document.querySelectorAll("#status-filters .filter")];
+const sourceFilters = document.querySelector("#source-filters");
 const supportUrl = "https://discord.gg/QRcVgVkAZr";
 
 let plugins = [];
-let activeFilter = "all";
+let activeType = "all";
+let activeStatus = "all";
+let activeSource = "all";
 
 document.querySelector("#year").textContent = new Date().getFullYear();
 
@@ -228,13 +232,26 @@ function render() {
 
   const query = searchInput.value.trim().toLowerCase();
   const visible = plugins.filter(plugin => {
-    const typeMatch = activeFilter === "all" || plugin.type === activeFilter;
+    const typeMatch = activeType === "all" || plugin.type === activeType;
+    const statusMatch = activeStatus === "all" || plugin.status === activeStatus;
+    const sourceMatch =
+      activeSource === "all" ||
+      (activeSource === "github" && Boolean(plugin.links?.source)) ||
+      (plugin.marketplaces || []).some(marketplace => marketplace.key === activeSource);
+
     const dependencySearch = [
       ...(plugin.dependencies?.required || []),
       ...(plugin.dependencies?.optional || [])
     ].join(" ");
-    const text = `${plugin.name} ${plugin.description} ${plugin.type} ${plugin.platforms.join(" ")} ${dependencySearch}`.toLowerCase();
-    return typeMatch && (!query || text.includes(query));
+    const marketplaceSearch = (plugin.marketplaces || [])
+      .map(marketplace => marketplace.name)
+      .join(" ");
+    const text = `${plugin.name} ${plugin.description} ${plugin.type} ${plugin.status} ${plugin.platforms.join(" ")} ${marketplaceSearch} ${dependencySearch}`.toLowerCase();
+
+    return typeMatch &&
+      statusMatch &&
+      sourceMatch &&
+      (!query || text.includes(query));
   });
 
   if (!visible.length) {
@@ -245,12 +262,71 @@ function render() {
   visible.forEach(plugin => grid.appendChild(buildCard(plugin)));
 }
 
+function activateFilter(buttons, selected) {
+  buttons.forEach(button => {
+    button.classList.toggle("active", button === selected);
+  });
+}
+
+function buildSourceFilters() {
+  const sources = new Map();
+
+  if (plugins.length) {
+    sources.set("github", "GitHub");
+  }
+
+  plugins.forEach(plugin => {
+    (plugin.marketplaces || []).forEach(marketplace => {
+      if (marketplace?.key && marketplace?.name) {
+        sources.set(marketplace.key, marketplace.name);
+      }
+    });
+  });
+
+  const preferredOrder = ["github", "modrinth", "hangar", "spigot", "curseforge"];
+  const sortedSources = [...sources.entries()].sort(([keyA, nameA], [keyB, nameB]) => {
+    const indexA = preferredOrder.indexOf(keyA);
+    const indexB = preferredOrder.indexOf(keyB);
+    const orderA = indexA === -1 ? preferredOrder.length : indexA;
+    const orderB = indexB === -1 ? preferredOrder.length : indexB;
+
+    return orderA - orderB || nameA.localeCompare(nameB);
+  });
+
+  sourceFilters.innerHTML = "";
+
+  const allButton = document.createElement("button");
+  allButton.className = "filter active";
+  allButton.type = "button";
+  allButton.dataset.source = "all";
+  allButton.textContent = "All";
+  sourceFilters.appendChild(allButton);
+
+  sortedSources.forEach(([key, name]) => {
+    const button = document.createElement("button");
+    button.className = "filter";
+    button.type = "button";
+    button.dataset.source = key;
+    button.textContent = name;
+    sourceFilters.appendChild(button);
+  });
+
+  [...sourceFilters.querySelectorAll(".filter")].forEach(button => {
+    button.addEventListener("click", () => {
+      activateFilter([...sourceFilters.querySelectorAll(".filter")], button);
+      activeSource = button.dataset.source;
+      render();
+    });
+  });
+}
+
 async function init() {
   try {
     const response = await fetch("catalog.json", { cache: "no-store" });
     if (!response.ok) throw new Error("Could not load catalog.json");
     plugins = await response.json();
 
+    buildSourceFilters();
     render();
   } catch (error) {
     console.error(error);
@@ -258,11 +334,18 @@ async function init() {
   }
 }
 
-filters.forEach(button => {
+typeFilters.forEach(button => {
   button.addEventListener("click", () => {
-    filters.forEach(item => item.classList.remove("active"));
-    button.classList.add("active");
-    activeFilter = button.dataset.filter;
+    activateFilter(typeFilters, button);
+    activeType = button.dataset.type;
+    render();
+  });
+});
+
+statusFilters.forEach(button => {
+  button.addEventListener("click", () => {
+    activateFilter(statusFilters, button);
+    activeStatus = button.dataset.status;
     render();
   });
 });
