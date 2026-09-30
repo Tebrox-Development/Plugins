@@ -434,6 +434,28 @@ h1 span {
   overflow-wrap: anywhere;
 }
 
+.download-breakdown {
+  display: grid;
+  gap: 4px;
+  margin-top: 8px;
+  padding-top: 8px;
+  border-top: 1px solid rgba(255,255,255,.06);
+}
+
+.download-breakdown-row {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  color: #778493;
+  font-size: .74rem;
+}
+
+.download-breakdown-row strong {
+  color: #b8c2cd;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+}
+
 .card-actions {
   display: grid;
   grid-template-columns: 1fr 1fr;
