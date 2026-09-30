@@ -147,6 +147,46 @@ function appendDownloadBreakdown(container, plugin) {
   container.appendChild(breakdown);
 }
 
+
+function appendBstatsUsage(container, plugin) {
+  if (!showDetailedDownloadStats) return;
+
+  const bstats = plugin.bstats;
+  if (!bstats) return;
+
+  const rows = [
+    ["Servers", bstats.servers],
+    ["Players", bstats.players]
+  ].filter(([, value]) => Number.isFinite(value));
+
+  if (!rows.length) return;
+
+  const block = document.createElement("div");
+  block.className = "bstats-usage";
+
+  const title = document.createElement("dt");
+  title.textContent = "bStats usage";
+
+  const values = document.createElement("dd");
+  values.className = "bstats-usage-values";
+
+  rows.forEach(([label, value]) => {
+    const item = document.createElement("span");
+
+    const name = document.createElement("span");
+    name.textContent = label;
+
+    const count = document.createElement("strong");
+    count.textContent = number.format(value);
+
+    item.append(name, count);
+    values.appendChild(item);
+  });
+
+  block.append(title, values);
+  container.appendChild(block);
+}
+
 function buildCard(plugin) {
   const fragment = template.content.cloneNode(true);
   const card = fragment.querySelector(".plugin-card");
@@ -183,6 +223,7 @@ function buildCard(plugin) {
         ? number.format(plugin.downloadStats.total)
         : "Unavailable";
     appendDownloadBreakdown(downloads, plugin);
+    appendBstatsUsage(releaseMeta, plugin);
     versionBadge.textContent = release?.version
       ? `v${release.version}`
       : "—";
@@ -306,6 +347,7 @@ function buildCard(plugin) {
 
   [
     ["Discord Support", supportUrl],
+    ["bStats", plugin.bstats?.url],
     ["Documentation", plugin.links.wiki],
     ["Issues", plugin.links.issues]
   ].forEach(([label, url]) => {
