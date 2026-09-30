@@ -456,6 +456,32 @@ h1 span {
   font-variant-numeric: tabular-nums;
 }
 
+
+.bstats-usage {
+  grid-column: 1 / -1;
+  padding-top: 4px;
+}
+
+.bstats-usage-values {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px 18px;
+}
+
+.bstats-usage-values > span {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 6px;
+  color: #778493;
+  font-size: .76rem;
+}
+
+.bstats-usage-values strong {
+  color: #b8c2cd;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+}
+
 .card-actions {
   display: grid;
   grid-template-columns: 1fr 1fr;
