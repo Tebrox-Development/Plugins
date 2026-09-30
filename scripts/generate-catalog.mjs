@@ -293,6 +293,95 @@ async function getDownloadStats(releaseData, marketplaces) {
   };
 }
 
+
+async function getBstatsChartValue(pluginId, chartId) {
+  try {
+    const response = await fetch(
+      `https://bstats.org/api/v1/plugins/${pluginId}/charts/${encodeURIComponent(chartId)}/data?maxElements=1`,
+      {
+        headers: {
+          Accept: "application/json",
+          "User-Agent": "Tebrox-Development/plugin-catalog"
+        }
+      }
+    );
+
+    if (!response.ok) return null;
+
+    const data = await response.json();
+    if (!Array.isArray(data) || !data.length) return null;
+
+    const latest = data[data.length - 1];
+    if (!Array.isArray(latest) || latest.length < 2) return null;
+
+    const value = Number(latest[1]);
+    return Number.isFinite(value) ? value : null;
+  } catch {
+    return null;
+  }
+}
+
+async function getBstatsData(properties) {
+  const configuredId = propertyValue(properties, "plugin_bstats_id");
+  if (configuredId === null) return null;
+
+  const pluginId = Number.parseInt(String(configuredId).trim(), 10);
+  if (!Number.isSafeInteger(pluginId) || pluginId <= 0) {
+    console.warn(`Ignoring invalid plugin_bstats_id: ${configuredId}`);
+    return null;
+  }
+
+  try {
+    const response = await fetch(
+      `https://bstats.org/api/v1/plugins/${pluginId}`,
+      {
+        headers: {
+          Accept: "application/json",
+          "User-Agent": "Tebrox-Development/plugin-catalog"
+        }
+      }
+    );
+
+    if (!response.ok) {
+      console.warn(
+        `bStats API ${response.status} for plugin ID ${pluginId}; bStats data will be omitted.`
+      );
+      return null;
+    }
+
+    const details = await response.json();
+    const softwareSlug = details?.software?.url;
+    const pluginName = details?.name;
+
+    if (!softwareSlug || !pluginName) {
+      console.warn(
+        `bStats metadata for plugin ID ${pluginId} is missing name or software information.`
+      );
+      return null;
+    }
+
+    const charts = details?.charts || {};
+    const [servers, players] = await Promise.all([
+      charts.servers ? getBstatsChartValue(pluginId, "servers") : Promise.resolve(null),
+      charts.players ? getBstatsChartValue(pluginId, "players") : Promise.resolve(null)
+    ]);
+
+    return {
+      id: pluginId,
+      url:
+        `https://bstats.org/plugin/${encodeURIComponent(softwareSlug)}/` +
+        `${encodeURIComponent(pluginName)}/${pluginId}`,
+      servers,
+      players
+    };
+  } catch (error) {
+    console.warn(
+      `Could not load bStats data for plugin ID ${pluginId}: ${error.message}`
+    );
+    return null;
+  }
+}
+
 async function getCustomProperties(repo) {
   const valuesUrl = `${API}/repos/${repo}/properties/values`;
   let response = await fetch(valuesUrl, { headers });
@@ -591,6 +680,7 @@ async function buildAutomaticEntry(repo, properties) {
   );
   const marketplaces = await getMarketplaces(properties);
   const downloadStats = await getDownloadStats(releaseData, marketplaces);
+  const bstats = await getBstatsData(properties);
 
   return {
     name: propertyValue(properties, "plugin_name") || titleFromRepo(details.name),
@@ -617,6 +707,7 @@ async function buildAutomaticEntry(repo, properties) {
     },
     marketplaces,
     downloadStats,
+    bstats,
     dependencies,
     releaseData
   };
