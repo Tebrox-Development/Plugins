@@ -5,6 +5,7 @@ const typeFilters = [...document.querySelectorAll("#type-filters .filter")];
 const statusFilters = [...document.querySelectorAll("#status-filters .filter")];
 const sourceFilters = document.querySelector("#source-filters");
 const supportUrl = "https://discord.gg/QRcVgVkAZr";
+const downloadDetailStorageKey = "tebrox-plugin-download-details";
 
 let plugins = [];
 let activeType = "all";
@@ -15,6 +16,40 @@ document.querySelector("#year").textContent = new Date().getFullYear();
 
 const number = new Intl.NumberFormat("en-US");
 const optionalDependencyPreview = 4;
+let showDetailedDownloadStats = false;
+
+function initDownloadDetailMode() {
+  const params = new URLSearchParams(window.location.search);
+  const requestedMode = params.get("stats");
+
+  try {
+    if (requestedMode === "1") {
+      localStorage.setItem(downloadDetailStorageKey, "1");
+    } else if (requestedMode === "0") {
+      localStorage.removeItem(downloadDetailStorageKey);
+    }
+
+    showDetailedDownloadStats =
+      requestedMode === "1" ||
+      (requestedMode !== "0" &&
+        localStorage.getItem(downloadDetailStorageKey) === "1");
+  } catch {
+    showDetailedDownloadStats = requestedMode === "1";
+  }
+
+  if (requestedMode === "1" || requestedMode === "0") {
+    params.delete("stats");
+    const query = params.toString();
+    const cleanUrl =
+      window.location.pathname +
+      (query ? `?${query}` : "") +
+      window.location.hash;
+
+    history.replaceState(history.state, "", cleanUrl);
+  }
+}
+
+initDownloadDetailMode();
 
 function link(label, url) {
   if (!url) return null;
@@ -53,6 +88,65 @@ function marketplaceLink(marketplace) {
   return a;
 }
 
+function appendDownloadBreakdown(container, plugin) {
+  if (!showDetailedDownloadStats) return;
+
+  const stats = plugin.downloadStats;
+  if (!stats) return;
+
+  const rows = [];
+
+  if (Number.isFinite(stats.github)) {
+    rows.push(["GitHub", stats.github]);
+  }
+
+  const marketplaceNames = new Map(
+    (plugin.marketplaces || []).map(marketplace => [
+      marketplace.key,
+      marketplace.name
+    ])
+  );
+  const marketplaceStats = stats.marketplaces || {};
+  const preferredOrder = ["modrinth", "hangar", "spigot", "curseforge"];
+  const entries = Object.entries(marketplaceStats)
+    .filter(([, downloads]) => Number.isFinite(downloads))
+    .sort(([keyA], [keyB]) => {
+      const indexA = preferredOrder.indexOf(keyA);
+      const indexB = preferredOrder.indexOf(keyB);
+      const orderA = indexA === -1 ? preferredOrder.length : indexA;
+      const orderB = indexB === -1 ? preferredOrder.length : indexB;
+      return orderA - orderB || keyA.localeCompare(keyB);
+    });
+
+  entries.forEach(([key, downloads]) => {
+    const fallbackName = key
+      ? key.charAt(0).toUpperCase() + key.slice(1)
+      : "Marketplace";
+    rows.push([marketplaceNames.get(key) || fallbackName, downloads]);
+  });
+
+  if (!rows.length) return;
+
+  const breakdown = document.createElement("div");
+  breakdown.className = "download-breakdown";
+
+  rows.forEach(([label, downloads]) => {
+    const row = document.createElement("span");
+    row.className = "download-breakdown-row";
+
+    const source = document.createElement("span");
+    source.textContent = label;
+
+    const value = document.createElement("strong");
+    value.textContent = number.format(downloads);
+
+    row.append(source, value);
+    breakdown.appendChild(row);
+  });
+
+  container.appendChild(breakdown);
+}
+
 function buildCard(plugin) {
   const fragment = template.content.cloneNode(true);
   const card = fragment.querySelector(".plugin-card");
@@ -83,10 +177,12 @@ function buildCard(plugin) {
     versionBadge.remove();
   } else {
     fragment.querySelector(".compatibility").textContent = plugin.compatibility;
-    fragment.querySelector(".downloads").textContent =
+    const downloads = fragment.querySelector(".downloads");
+    downloads.textContent =
       Number.isFinite(plugin.downloadStats?.total)
         ? number.format(plugin.downloadStats.total)
         : "Unavailable";
+    appendDownloadBreakdown(downloads, plugin);
     versionBadge.textContent = release?.version
       ? `v${release.version}`
       : "—";
