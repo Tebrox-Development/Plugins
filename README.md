@@ -16,6 +16,7 @@ GitHub is the source of truth:
 - plugin name defaults to the repository name and can be overridden with `plugin_name`
 - plugin dependencies are read from `paper-plugin.yml` or `plugin.yml`
 - release/version/download information is collected from GitHub and configured marketplaces
+- bStats data is loaded automatically when `plugin_bstats_id` is configured
 - repositories without a published release are shown as **Coming Soon**
 - Coming Soon content prefers `development`, then `dev`, then the default branch
 
@@ -31,6 +32,7 @@ The generated `catalog.json` is created by `scripts/generate-catalog.mjs` during
 | `plugin_compatibility` | Compatibility text shown for active releases |
 | `plugin_name` | Optional display-name override |
 | `plugin_marketplaces` | Marketplace links in compact form |
+| `plugin_bstats_id` | Optional bStats plugin ID; adds the bStats link and usage data |
 
 Supported compact marketplace entries:
 
@@ -39,6 +41,8 @@ Supported compact marketplace entries:
 - `s:<resource-id>` — SpigotMC
 
 Multiple entries are separated with `;`.
+
+When `plugin_bstats_id` is not configured, no bStats link or bStats usage data is shown for that plugin. Server/player usage values are shown only in the optional detailed stats view.
 
 Example:
 
