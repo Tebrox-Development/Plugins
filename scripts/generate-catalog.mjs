@@ -321,7 +321,7 @@ async function getBstatsChartValue(pluginId, chartId) {
   }
 }
 
-async function getBstatsData(properties) {
+async function getBstatsData(properties, fallbackName, platforms = []) {
   const configuredId = propertyValue(properties, "plugin_bstats_id");
   if (configuredId === null) return null;
 
@@ -330,6 +330,23 @@ async function getBstatsData(properties) {
     console.warn(`Ignoring invalid plugin_bstats_id: ${configuredId}`);
     return null;
   }
+
+  const normalizedPlatforms = platforms.map(platform => String(platform).toLowerCase());
+  const fallbackSoftware =
+    normalizedPlatforms.includes("velocity") ? "velocity" :
+    normalizedPlatforms.includes("bungeecord") ? "bungeecord" :
+    normalizedPlatforms.includes("sponge") ? "sponge" :
+    normalizedPlatforms.includes("pocketmine") ? "pocketmine" :
+    "bukkit";
+  const fallbackUrl =
+    `https://bstats.org/plugin/${fallbackSoftware}/` +
+    `${encodeURIComponent(fallbackName || "plugin")}/${pluginId}`;
+  const fallback = {
+    id: pluginId,
+    url: fallbackUrl,
+    servers: null,
+    players: null
+  };
 
   try {
     const response = await fetch(
@@ -344,9 +361,9 @@ async function getBstatsData(properties) {
 
     if (!response.ok) {
       console.warn(
-        `bStats API ${response.status} for plugin ID ${pluginId}; bStats data will be omitted.`
+        `bStats API ${response.status} for plugin ID ${pluginId}; using link-only fallback.`
       );
-      return null;
+      return fallback;
     }
 
     const details = await response.json();
@@ -355,9 +372,9 @@ async function getBstatsData(properties) {
 
     if (!softwareSlug || !pluginName) {
       console.warn(
-        `bStats metadata for plugin ID ${pluginId} is missing name or software information.`
+        `bStats metadata for plugin ID ${pluginId} is missing name or software information; using link-only fallback.`
       );
-      return null;
+      return fallback;
     }
 
     const charts = details?.charts || {};
@@ -376,9 +393,9 @@ async function getBstatsData(properties) {
     };
   } catch (error) {
     console.warn(
-      `Could not load bStats data for plugin ID ${pluginId}: ${error.message}`
+      `Could not load bStats data for plugin ID ${pluginId}: ${error.message}; using link-only fallback.`
     );
-    return null;
+    return fallback;
   }
 }
 
@@ -680,10 +697,11 @@ async function buildAutomaticEntry(repo, properties) {
   );
   const marketplaces = await getMarketplaces(properties);
   const downloadStats = await getDownloadStats(releaseData, marketplaces);
-  const bstats = await getBstatsData(properties);
+  const name = propertyValue(properties, "plugin_name") || titleFromRepo(details.name);
+  const bstats = await getBstatsData(properties, name, platforms);
 
   return {
-    name: propertyValue(properties, "plugin_name") || titleFromRepo(details.name),
+    name,
     repo: details.full_name,
     description: details.description || "No description provided.",
     type: propertyValue(properties, "plugin_type") || "Plugin",

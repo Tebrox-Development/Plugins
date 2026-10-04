@@ -148,27 +148,49 @@ function appendDownloadBreakdown(container, plugin) {
 }
 
 
-function appendBstatsUsage(container, plugin) {
-  if (!showDetailedDownloadStats) return;
+async function fetchBstatsChartValue(pluginId, chartId) {
+  const response = await fetch(
+    `https://bstats.org/api/v1/plugins/${pluginId}/charts/${encodeURIComponent(chartId)}/data?maxElements=1`,
+    { headers: { Accept: "application/json" } }
+  );
 
-  const bstats = plugin.bstats;
-  if (!bstats) return;
+  if (!response.ok) return null;
 
+  const data = await response.json();
+  if (!Array.isArray(data) || !data.length) return null;
+
+  const latest = data[data.length - 1];
+  const value = Array.isArray(latest) ? Number(latest[1]) : NaN;
+  return Number.isFinite(value) ? value : null;
+}
+
+async function fetchBstatsUsage(pluginId) {
+  const response = await fetch(
+    `https://bstats.org/api/v1/plugins/${pluginId}`,
+    { headers: { Accept: "application/json" } }
+  );
+
+  if (!response.ok) return null;
+
+  const details = await response.json();
+  const charts = details?.charts || {};
+  const [servers, players] = await Promise.all([
+    charts.servers ? fetchBstatsChartValue(pluginId, "servers") : Promise.resolve(null),
+    charts.players ? fetchBstatsChartValue(pluginId, "players") : Promise.resolve(null)
+  ]);
+
+  return { servers, players };
+}
+
+function renderBstatsUsageRows(container, stats) {
   const rows = [
-    ["Servers", bstats.servers],
-    ["Players", bstats.players]
+    ["Servers", stats?.servers],
+    ["Players", stats?.players]
   ].filter(([, value]) => Number.isFinite(value));
 
-  if (!rows.length) return;
+  if (!rows.length) return false;
 
-  const block = document.createElement("div");
-  block.className = "bstats-usage";
-
-  const title = document.createElement("dt");
-  title.textContent = "bStats usage";
-
-  const values = document.createElement("dd");
-  values.className = "bstats-usage-values";
+  container.replaceChildren();
 
   rows.forEach(([label, value]) => {
     const item = document.createElement("span");
@@ -180,11 +202,43 @@ function appendBstatsUsage(container, plugin) {
     count.textContent = number.format(value);
 
     item.append(name, count);
-    values.appendChild(item);
+    container.appendChild(item);
   });
+
+  return true;
+}
+
+function appendBstatsUsage(container, plugin) {
+  if (!showDetailedDownloadStats) return;
+
+  const bstats = plugin.bstats;
+  if (!bstats?.id) return;
+
+  const block = document.createElement("div");
+  block.className = "bstats-usage";
+
+  const title = document.createElement("dt");
+  title.textContent = "bStats usage";
+
+  const values = document.createElement("dd");
+  values.className = "bstats-usage-values";
 
   block.append(title, values);
   container.appendChild(block);
+
+  if (renderBstatsUsageRows(values, bstats)) return;
+
+  values.textContent = "Loading…";
+
+  fetchBstatsUsage(bstats.id)
+    .then(stats => {
+      if (!stats || !renderBstatsUsageRows(values, stats)) {
+        block.remove();
+      }
+    })
+    .catch(() => {
+      block.remove();
+    });
 }
 
 function buildCard(plugin) {
