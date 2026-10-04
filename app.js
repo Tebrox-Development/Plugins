@@ -399,12 +399,17 @@ function buildCard(plugin) {
     secondary.before(marketplaceSection);
   }
 
-  [
+  const secondaryLinks = [
     ["Discord Support", supportUrl],
-    ["bStats", plugin.bstats?.url],
     ["Documentation", plugin.links.wiki],
     ["Issues", plugin.links.issues]
-  ].forEach(([label, url]) => {
+  ];
+
+  if (showDetailedDownloadStats && plugin.bstats?.url) {
+    secondaryLinks.splice(1, 0, ["bStats", plugin.bstats.url]);
+  }
+
+  secondaryLinks.forEach(([label, url]) => {
     const el = link(label, url);
     if (el) secondary.appendChild(el);
   });
